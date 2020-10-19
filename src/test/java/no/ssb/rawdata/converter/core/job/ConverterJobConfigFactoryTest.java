@@ -1,7 +1,5 @@
-package no.ssb.rawdata.converter.coredux.job;
+package no.ssb.rawdata.converter.core.job;
 
-import no.ssb.rawdata.converter.core.job.ConverterJobConfig;
-import no.ssb.rawdata.converter.core.job.ConverterJobConfigFactory;
 import no.ssb.rawdata.converter.core.job.ConverterJobConfigFactory.InvalidConverterJobConfigException;
 import no.ssb.rawdata.converter.core.job.ConverterJobConfigFactory.MissingRequiredPropertiesException;
 import no.ssb.rawdata.converter.core.rawdatasource.RawdataSourceConfig;
