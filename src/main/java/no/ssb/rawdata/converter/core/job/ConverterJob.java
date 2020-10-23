@@ -123,7 +123,6 @@ public class ConverterJob {
             pseudoReport.getWarnings().forEach(log::warn);
         }
 */
-//        readiness.blockingReadinessCheck();
 
         rawdataConverter.init(sampleRawdataMessages());
         tryPublishDatasetMetadata();
@@ -224,6 +223,10 @@ public class ConverterJob {
         }
     }
 
+    public ConverterJobConfig getJobConfig() {
+        return jobConfig;
+    }
+
     public Map<String, Object> getExecutionSummary() {
 
         double avgMessagesPerSecond = 0;
@@ -255,11 +258,12 @@ public class ConverterJob {
         for (int count=0; count<maxSize; count++) {
             try {
                 RawdataMessage rawdataMessage = rawdataConsumer.receive(TIMEOUT, TimeUnit.MILLISECONDS);
+
                 if (rawdataMessage == null) {
                     break;
                 }
                 else {
-                    rawdataMessages.add(rawdataMessage);
+                    rawdataMessages.add(rawdataDecryptor.tryDecrypt(rawdataMessage));
                 }
             }
             catch (InterruptedException | RawdataClosedException e) {
