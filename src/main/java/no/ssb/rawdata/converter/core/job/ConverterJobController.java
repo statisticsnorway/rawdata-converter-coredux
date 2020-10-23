@@ -48,6 +48,17 @@ public class ConverterJobController {
         );
     }
 
+    @Get("/config")
+    public HttpResponse<String> getJobConfigs() {
+        return HttpResponse.ok(Json.prettyFrom(
+          jobScheduler.getJobs().values().stream()
+            .collect(Collectors.toMap(
+              ConverterJob::jobId,
+              ConverterJob::getJobConfig
+            )))
+        );
+    }
+
     @Post("/pause")
     public void pauseAllJobs() {
         jobScheduler.pauseAll();
@@ -76,6 +87,11 @@ public class ConverterJobController {
     @Post("/{jobId}/stop")
     public void stopJob(@PathVariable String jobId) {
         jobScheduler.stop(ULID.parseULID(jobId));
+    }
+
+    @Get("/{jobId}/config")
+    public HttpResponse<String> getJobConfig(String jobId) {
+        return HttpResponse.ok(Json.prettyFrom(jobScheduler.getJob(ULID.parseULID(jobId)).getJobConfig()));
     }
 
     @Get("/{jobId}/execution-summary")
