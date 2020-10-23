@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>no.ssb.rawdata.converter</groupId>
   <artifactId>rawdata-converter-coredux</artifactId>
-  <version>0.5.5-SNAPSHOT</version>
+  <version>0.5.5</version>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -28,7 +28,7 @@
     <connection>scm:git:git://github.com/statisticsnorway/rawdata-converter-coredux.git</connection>
     <developerConnection>scm:git:git@github.com:statisticsnorway/rawdata-converter-coredux.git</developerConnection>
     <url>https://github.com/statisticsnorway/rawdata-converter-coredux</url>
-    <tag>HEAD</tag>
+    <tag>rawdata-converter-coredux-0.5.5</tag>
   </scm>
 
   <repositories>
