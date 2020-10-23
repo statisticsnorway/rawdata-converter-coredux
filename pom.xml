@@ -19,8 +19,8 @@
 <!--    <maven-shade-plugin.version>3.1.0</maven-shade-plugin.version> -->
     <maven-surefire-plugin.version>2.22.2</maven-surefire-plugin.version>
 
-    <rawdata-converter.version>0.5.4</rawdata-converter.version>
-    <micronaut.version>2.1.1</micronaut.version>
+    <rawdata-converter.version>0.5.5</rawdata-converter.version>
+    <micronaut.version>2.1.2</micronaut.version>
     <lombok.version>1.18.12</lombok.version>
   </properties>
 
@@ -262,6 +262,20 @@
               </configuration>
             </execution>
           </executions>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-jar-plugin</artifactId>
+          <configuration>
+            <archive>
+              <manifest>
+                <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+              </manifest>
+              <manifestEntries>
+                <Micronaut-Version>${micronaut.version}</Micronaut-Version>
+              </manifestEntries>
+            </archive>
+          </configuration>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
