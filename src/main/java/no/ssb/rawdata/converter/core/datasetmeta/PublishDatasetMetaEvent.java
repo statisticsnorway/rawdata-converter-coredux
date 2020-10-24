@@ -1,13 +1,11 @@
 package no.ssb.rawdata.converter.core.datasetmeta;
 
 import lombok.Builder;
-import lombok.Data;
 import lombok.NonNull;
 import lombok.Value;
 import no.ssb.dlp.pseudo.core.PseudoFuncRule;
 
 import java.util.List;
-import java.util.Map;
 
 @Value
 @Builder
