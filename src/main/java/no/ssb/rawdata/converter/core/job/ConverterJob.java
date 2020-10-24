@@ -177,15 +177,19 @@ public class ConverterJob {
         return (sampleCount == 0) ? List.of() : rawdataMessagesListOf(rawdataConsumers.getSampleRawdataConsumer(), sampleCount);
     }
 
-    private void tryPublishDatasetMetadata() {
-        PublishDatasetMetaEvent datasetMetaEvent = PublishDatasetMetaEvent.builder()
+    PublishDatasetMetaEvent createDatasetMetadataEvent() {
+        return PublishDatasetMetaEvent.builder()
           .storageRoot(jobConfig.getTargetStorage().getRoot())
           .storagePath(jobConfig.getTargetStorage().getPath())
           .storageVersion(jobConfig.getTargetStorage().getVersion())
           .valuation(jobConfig.getTargetDataset().getValuation())
           .type(jobConfig.getTargetDataset().getType())
-//          .pseudoRules(jobConfig.getPseudoRules()) // TODO: fix this
+          .pseudoRules(jobConfig.getPseudoRules())
           .build();
+    }
+
+    private void tryPublishDatasetMetadata() {
+        PublishDatasetMetaEvent datasetMetaEvent = createDatasetMetadataEvent();
         if (jobConfig.getTargetDataset().shouldPublishMetadata()) {
 
             if (jobConfig.getDebug().isDryrun()) {

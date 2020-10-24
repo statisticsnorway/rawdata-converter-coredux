@@ -94,6 +94,11 @@ public class ConverterJobController {
         return HttpResponse.ok(Json.prettyFrom(jobScheduler.getJob(ULID.parseULID(jobId)).getJobConfig()));
     }
 
+    @Get("/{jobId}/dataset-meta")
+    public HttpResponse<String> getJobDatasetMeta(String jobId) {
+        return HttpResponse.ok(Json.prettyFrom(jobScheduler.getJob(ULID.parseULID(jobId)).createDatasetMetadataEvent()));
+    }
+
     @Get("/{jobId}/execution-summary")
     public HttpResponse<String> getJobExecutionSummary(String jobId) {
         return HttpResponse.ok(Json.prettyFrom(jobScheduler.getJob(ULID.parseULID(jobId)).getExecutionSummary()));
