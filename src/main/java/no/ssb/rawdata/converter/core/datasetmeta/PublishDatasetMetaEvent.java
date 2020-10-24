@@ -1,9 +1,12 @@
 package no.ssb.rawdata.converter.core.datasetmeta;
 
 import lombok.Builder;
+import lombok.Data;
 import lombok.NonNull;
 import lombok.Value;
+import no.ssb.dlp.pseudo.core.PseudoFuncRule;
 
+import java.util.List;
 import java.util.Map;
 
 @Value
@@ -25,7 +28,6 @@ public class PublishDatasetMetaEvent {
     @NonNull
     private DatasetType type;
 
-//    @NonNull TODO: Enable this!
-    private Map<String, Object> pseudoRules;
+    private List<PseudoFuncRule> pseudoRules;
 
 }

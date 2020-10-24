@@ -24,6 +24,7 @@ import no.ssb.rawdata.converter.service.dapla.dataaccess.DataAccessService;
 import no.ssb.rawdata.converter.service.dapla.dataaccess.ValidatedDatasetMeta;
 import no.ssb.rawdata.converter.service.dapla.metadatadistributor.MetadataDistributorService;
 import no.ssb.rawdata.converter.service.dapla.oauth.AuthTokenProvider;
+import no.ssb.rawdata.converter.service.dapla.oauth.MockAuthTokenProvider;
 import no.ssb.rawdata.converter.util.DatasetUriBuilder;
 
 import javax.inject.Singleton;
@@ -56,6 +57,13 @@ public class DatasetMetaService {
         publishMetadata(datasetMeta, datasetUri);
     }
 
+    /**
+     * @return true if external services can be invoked (e.g. if we can get hold of a valid access token)
+     */
+    private boolean canInvokeExternalServices() {
+        return ! (authTokenProvider instanceof MockAuthTokenProvider);
+    }
+
     private GrpcAuthorizationBearerCallCredentials grpcCallCredentials() {
         String authToken = authTokenProvider.getAuthToken();
         GrpcAuthorizationBearerCallCredentials callCredentials = GrpcAuthorizationBearerCallCredentials.create(authToken);
@@ -71,6 +79,10 @@ public class DatasetMetaService {
      */
     private void publishMetadata(DatasetMeta meta, DatasetUri datasetUri) throws DatasetMetaPublishException {
         log.info("Publish dataset meta for {}", datasetUri.toString());
+        if (! canInvokeExternalServices()) {
+            log.warn("Dataset meta publishing was skipped since external services cannot be invoked. To fix, configure a valid auth token provider, e.g. set 'services.dapla-oauth.token-provider=keycloak'");
+            return;
+        }
         String metaJson = datasetMetaJsonOf(meta);
         GrpcAuthorizationBearerCallCredentials credentials = grpcCallCredentials();
 
@@ -131,14 +143,12 @@ public class DatasetMetaService {
           .setPseudoConfig(
             PseudoConfig.newBuilder()
               .addAllVars(
-                e.getPseudoRules().values().stream()
-                  .map(r -> {
-                      Map<String, String> rule = (Map<String, String>) r;
-                      return VarPseudoConfigItem.newBuilder()
-                        .setVar(rule.get("pattern"))
-                        .setPseudoFunc(rule.get("func"))
-                        .build();
-                  })
+                e.getPseudoRules().stream()
+                  .map(r -> VarPseudoConfigItem.newBuilder()
+                        .setVar(r.getPattern())
+                        .setPseudoFunc(r.getFunc())
+                        .build()
+                  )
                   .collect(Collectors.toList()))
           )
           .build();

@@ -1,12 +1,15 @@
 package no.ssb.rawdata.converter.core.datasetmeta;
 
 import io.micronaut.http.HttpResponse;
+import io.micronaut.http.MediaType;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Post;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import no.ssb.dlp.pseudo.core.PseudoFuncRule;
 
-import javax.ws.rs.core.MediaType;
+import java.util.List;
 
 @Controller("/dataset-meta")
 @RequiredArgsConstructor
@@ -16,9 +19,9 @@ public class DatasetMetaController {
     private final DatasetMetaService datasetMetaService;
 
     @Post(consumes = MediaType.APPLICATION_JSON)
-    public HttpResponse publishDatasetMeta(PublishDatasetMetaEvent datasetMeta) {
+    public HttpResponse publishDatasetMeta(DatasetMetaDto datasetMeta) {
         try {
-            datasetMetaService.onPublishDatasetMeta(datasetMeta);
+            datasetMetaService.onPublishDatasetMeta(datasetMeta.toEvent());
             return HttpResponse.ok();
         }
         catch (DatasetMetaService.DatasetMetaPublishException e) {
@@ -27,4 +30,18 @@ public class DatasetMetaController {
         }
     }
 
+    @Data
+    public static class DatasetMetaDto {
+        private String storageRoot;
+        private String storagePath;
+        private String storageVersion;
+        private Valuation valuation;
+        private DatasetType type;
+        private List<PseudoFuncRule> pseudoRules;
+
+        public PublishDatasetMetaEvent toEvent() {
+            return new PublishDatasetMetaEvent(
+              storageRoot, storagePath, storageVersion, valuation, type, pseudoRules);
+        }
+    }
 }
