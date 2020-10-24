@@ -1,6 +1,7 @@
 package no.ssb.rawdata.converter.service.dapla.oauth;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import io.micronaut.context.annotation.Requires;
 import no.ssb.rawdata.converter.util.Json;
 
 import javax.inject.Singleton;
@@ -17,6 +18,7 @@ import java.util.Map;
 import static java.time.temporal.ChronoUnit.SECONDS;
 
 @Singleton
+@Requires(property = "services.dapla-oauth.token-provider", value = "keycloak")
 public class KeycloakAuthTokenProvider implements AuthTokenProvider {
 
     private final HttpClient httpClient;
