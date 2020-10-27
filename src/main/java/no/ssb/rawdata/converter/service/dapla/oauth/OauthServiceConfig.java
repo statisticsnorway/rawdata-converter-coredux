@@ -4,7 +4,6 @@ import io.micronaut.context.annotation.ConfigurationProperties;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.validation.constraints.NotBlank;
 import java.net.URI;
 import java.util.Base64;
 
@@ -13,10 +12,8 @@ import java.util.Base64;
 @Slf4j
 public class OauthServiceConfig {
 
-    @NotBlank
     private String host;
 
-    @NotBlank
     private String tokenEndpointPath;
 
     private String clientId;
