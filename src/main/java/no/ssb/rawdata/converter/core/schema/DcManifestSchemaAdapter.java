@@ -20,26 +20,26 @@ import java.util.stream.Collectors;
 
 /**
  * Deduce avro schema automatically based on one or more RawdataMessage samples.
- * Provides functionality to produce a dcMetadata GenericRecord from a RawdataMessage.
+ * Provides functionality to produce a dcManifest GenericRecord from a RawdataMessage.
  */
 @Value
-public class DcMetadataSchemaAdapter {
+public class DcManifestSchemaAdapter {
 
     private static final String FIELDNAME_ULID = "ulid";
     private static final String FIELDNAME_POSITION = "position";
     private static final String FIELDNAME_TIMESTAMP = "timestamp";
     private static final String FIELDNAME_METADATA = "metadata";
 
-    private final Schema dcMetadataSchema;
+    private final Schema dcManifestSchema;
 
     /** Map of metadata field names to avro schema field names */
     private final Map<String, String> propToAvroFieldNames;
 
     /**
-     * Create a new DcMetadata GenericRecord with data from the supplied RawdataMessage
+     * Create a new DcManifest GenericRecord with data from the supplied RawdataMessage
      * @param rawdataMessage RawdataMessage to retrieve dcMetadata data from
      *
-     * @return a new dcMetadata GenericRecord
+     * @return a new dcManifest GenericRecord
      */
     public GenericRecord newRecord(RawdataMessage rawdataMessage) {
         RawdataMessageAdapter msg = new RawdataMessageAdapter(rawdataMessage);
@@ -55,7 +55,7 @@ public class DcMetadataSchemaAdapter {
             metadataItemRecords.add(metadataItemRecordBuilder.build());
         });
 
-        return new GenericRecordBuilder(dcMetadataSchema)
+        return new GenericRecordBuilder(dcManifestSchema)
           .set(FIELDNAME_ULID, rawdataMessage.ulid().toString())
           .set(FIELDNAME_POSITION, rawdataMessage.position())
           .set(FIELDNAME_TIMESTAMP, rawdataMessage.timestamp())
@@ -64,20 +64,20 @@ public class DcMetadataSchemaAdapter {
     }
 
     public Schema getMetadataItemSchema() {
-        return dcMetadataSchema.getField(FIELDNAME_METADATA).schema().getElementType();
+        return dcManifestSchema.getField(FIELDNAME_METADATA).schema().getElementType();
     }
 
-    public static DcMetadataSchemaAdapter of(RawdataMessage sample) {
-        return DcMetadataSchemaAdapter.of(List.of(sample));
+    public static DcManifestSchemaAdapter of(RawdataMessage sample) {
+        return DcManifestSchemaAdapter.of(List.of(sample));
     }
 
-    public static DcMetadataSchemaAdapter of(Collection<RawdataMessage> samples) {
+    public static DcManifestSchemaAdapter of(Collection<RawdataMessage> samples) {
         Set<String> fields = uniqueMetadataFieldsOf(samples);
         Map<String, String> metadataFieldNames = fields.stream()
           .collect(Collectors.toMap(Function.identity(), WordUtil::toCamelCase));
 
         Schema metadataItemSchema = metadataItemSchemaOf(metadataFieldNames.values());
-        return new DcMetadataSchemaAdapter(dcMetadataSchemaOf(metadataItemSchema), metadataFieldNames);
+        return new DcManifestSchemaAdapter(dcManifestSchemaOf(metadataItemSchema), metadataFieldNames);
     }
 
     /**
@@ -103,8 +103,8 @@ public class DcMetadataSchemaAdapter {
         return fieldAssembler.endRecord();
     }
 
-    private static Schema dcMetadataSchemaOf(Schema metadataItemSchema) {
-        return SchemaBuilder.record("dcMetadata")
+    private static Schema dcManifestSchemaOf(Schema metadataItemSchema) {
+        return SchemaBuilder.record("dcManifest")
           .fields()
           .requiredString(FIELDNAME_ULID)
           .requiredString(FIELDNAME_POSITION)
