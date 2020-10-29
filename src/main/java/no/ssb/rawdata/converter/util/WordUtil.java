@@ -3,6 +3,7 @@ package no.ssb.rawdata.converter.util;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
+// TODO: Use Slugify
 public class WordUtil {
 
     public static String toCamelCase(String s) {
