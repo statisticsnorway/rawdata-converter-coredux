@@ -135,6 +135,10 @@
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
     </dependency>
+    <dependency>
+      <groupId>net.thisptr</groupId>
+      <artifactId>jackson-jq</artifactId>
+    </dependency>
 
     <!-- SSB -->
     <dependency>
