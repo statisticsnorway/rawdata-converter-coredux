@@ -10,10 +10,15 @@ import javax.validation.constraints.NotNull;
 @ConfigurationProperties("services.dapla-data-access")
 public class DataAccessServiceConfig {
 
-    @NotNull
+    public enum Impl {
+        GRPC, HTTP, MOCK;
+    }
+
+    private Impl impl = Impl.MOCK;
+
     private String host;
 
-    @NotNull
     private Integer port;
 
+    private Boolean useGrpc;
 }

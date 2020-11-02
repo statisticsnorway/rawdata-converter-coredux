@@ -10,16 +10,18 @@ import javax.validation.constraints.NotNull;
 @ConfigurationProperties("services.dapla-metadata-distributor")
 public class MetadataDistributorServiceConfig {
 
-    @NotNull
+    public enum Impl {
+        GRPC, HTTP, MOCK;
+    }
+
+    private Impl impl = Impl.MOCK;
+
     private String host;
 
-    @NotNull
     private Integer port;
 
-    @NotNull
     private String projectId;
 
-    @NotNull
     private String topic;
 
 }
