@@ -16,7 +16,7 @@ import javax.inject.Singleton;
 @Factory
 @RequiredArgsConstructor
 @Slf4j
-public class DataAccessServiceFactory {
+public class GrpcDataAccessServiceFactory {
 
     private final DataAccessServiceConfig dataAccessServiceConfig;
 
@@ -24,7 +24,7 @@ public class DataAccessServiceFactory {
     private final AuthTokenProvider authTokenProvider;
 
     @Singleton
-    @Requires(property = "services.dapla-data-access.impl", value = "GRPC")
+    @Requires(property = DataAccessServiceConfig.PREFIX + ".impl", value = "GRPC")
     public DataAccessService grpcDataAccessService() {
         DataAccessServiceBlockingStub stub = DataAccessServiceGrpc.newBlockingStub(
           ManagedChannelBuilder
@@ -39,9 +39,4 @@ public class DataAccessServiceFactory {
         return new GrpcDataAccessService(stub, authTokenProvider);
     }
 
-    @Singleton
-    @Requires(property = "services.dapla-data-access.impl", value = "MOCK")
-    public DataAccessService mockDataAccessService() {
-        return new MockDataAccessService();
-    }
 }

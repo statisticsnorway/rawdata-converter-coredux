@@ -7,8 +7,10 @@ import lombok.Data;
 import javax.validation.constraints.NotNull;
 
 @Data
-@ConfigurationProperties("services.dapla-metadata-distributor")
+@ConfigurationProperties(MetadataDistributorServiceConfig.PREFIX)
 public class MetadataDistributorServiceConfig {
+
+    public static final String PREFIX = "services.dapla-metadata-distributor";
 
     public enum Impl {
         GRPC, HTTP, MOCK;

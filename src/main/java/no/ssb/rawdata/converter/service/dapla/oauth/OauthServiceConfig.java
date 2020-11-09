@@ -7,10 +7,12 @@ import lombok.extern.slf4j.Slf4j;
 import java.net.URI;
 import java.util.Base64;
 
-@ConfigurationProperties("services.dapla-oauth")
+@ConfigurationProperties(OauthServiceConfig.PREFIX)
 @Data
 @Slf4j
 public class OauthServiceConfig {
+
+    public static final String PREFIX = "services.dapla-oauth";
 
     private String host;
 

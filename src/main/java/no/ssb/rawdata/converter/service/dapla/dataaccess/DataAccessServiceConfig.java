@@ -7,8 +7,10 @@ import lombok.Data;
 import javax.validation.constraints.NotNull;
 
 @Data
-@ConfigurationProperties("services.dapla-data-access")
+@ConfigurationProperties(DataAccessServiceConfig.PREFIX)
 public class DataAccessServiceConfig {
+
+    public static final String PREFIX = "services.dapla-data-access";
 
     public enum Impl {
         GRPC, HTTP, MOCK;

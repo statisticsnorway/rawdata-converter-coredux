@@ -17,13 +17,11 @@ import no.ssb.dapla.dataset.api.VarPseudoConfigItem;
 import no.ssb.dapla.dataset.uri.DatasetUri;
 import no.ssb.dapla.storage.client.backend.BinaryBackend;
 import no.ssb.rawdata.converter.core.exception.RawdataConverterException;
-import no.ssb.rawdata.converter.core.security.GrpcAuthorizationBearerCallCredentials;
 import no.ssb.rawdata.converter.core.storage.BinaryBackendFactory;
 import no.ssb.rawdata.converter.core.storage.StorageType;
 import no.ssb.rawdata.converter.service.dapla.dataaccess.DataAccessService;
 import no.ssb.rawdata.converter.service.dapla.dataaccess.ValidatedDatasetMeta;
 import no.ssb.rawdata.converter.service.dapla.metadatadistributor.MetadataDistributorService;
-import no.ssb.rawdata.converter.service.dapla.oauth.AuthTokenProvider;
 import no.ssb.rawdata.converter.util.DatasetUriBuilder;
 
 import javax.inject.Singleton;
@@ -37,9 +35,6 @@ public class DatasetMetaService {
 
     @NonNull
     private final BinaryBackendFactory binaryBackendFactory;
-
-    @NonNull
-    private final AuthTokenProvider authTokenProvider;
 
     @NonNull
     private final DataAccessService dataAccessService;
@@ -76,6 +71,7 @@ public class DatasetMetaService {
         storeDatasetMetaFiles(validMeta, validMetaPath, signaturePath);
 
         // Notify the metadata distributor about the creation of the metadata and signature files
+        // TODO: Is this correct? ..or do we only need to publish the signed file?
         metadataDistributorService.publishFile(validMetaPath);
         metadataDistributorService.publishFile(signaturePath);
 
