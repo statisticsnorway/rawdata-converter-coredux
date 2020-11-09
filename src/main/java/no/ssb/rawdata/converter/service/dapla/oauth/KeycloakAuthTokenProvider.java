@@ -17,6 +17,8 @@ import java.util.Map;
 
 import static java.time.temporal.ChronoUnit.SECONDS;
 
+// TODO: Cache token
+
 @Singleton
 @Requires(property = "services.dapla-oauth.token-provider", value = "keycloak")
 public class KeycloakAuthTokenProvider implements AuthTokenProvider {
@@ -77,4 +79,5 @@ public class KeycloakAuthTokenProvider implements AuthTokenProvider {
             super(message, cause);
         }
     }
+
 }

@@ -17,18 +17,14 @@ import no.ssb.dapla.dataset.api.VarPseudoConfigItem;
 import no.ssb.dapla.dataset.uri.DatasetUri;
 import no.ssb.dapla.storage.client.backend.BinaryBackend;
 import no.ssb.rawdata.converter.core.exception.RawdataConverterException;
-import no.ssb.rawdata.converter.core.security.GrpcAuthorizationBearerCallCredentials;
 import no.ssb.rawdata.converter.core.storage.BinaryBackendFactory;
 import no.ssb.rawdata.converter.core.storage.StorageType;
 import no.ssb.rawdata.converter.service.dapla.dataaccess.DataAccessService;
 import no.ssb.rawdata.converter.service.dapla.dataaccess.ValidatedDatasetMeta;
 import no.ssb.rawdata.converter.service.dapla.metadatadistributor.MetadataDistributorService;
-import no.ssb.rawdata.converter.service.dapla.oauth.AuthTokenProvider;
-import no.ssb.rawdata.converter.service.dapla.oauth.MockAuthTokenProvider;
 import no.ssb.rawdata.converter.util.DatasetUriBuilder;
 
 import javax.inject.Singleton;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @Singleton
@@ -39,9 +35,6 @@ public class DatasetMetaService {
 
     @NonNull
     private final BinaryBackendFactory binaryBackendFactory;
-
-    @NonNull
-    private final AuthTokenProvider authTokenProvider;
 
     @NonNull
     private final DataAccessService dataAccessService;
@@ -58,36 +51,17 @@ public class DatasetMetaService {
     }
 
     /**
-     * @return true if external services can be invoked (e.g. if we can get hold of a valid access token)
-     */
-    private boolean canInvokeExternalServices() {
-        return ! (authTokenProvider instanceof MockAuthTokenProvider);
-    }
-
-    private GrpcAuthorizationBearerCallCredentials grpcCallCredentials() {
-        String authToken = authTokenProvider.getAuthToken();
-        GrpcAuthorizationBearerCallCredentials callCredentials = GrpcAuthorizationBearerCallCredentials.create(authToken);
-        return callCredentials;
-    }
-
-    // TODO: Don't pass credentials explicitly - let the misc services resolve this from a common auth token manager
-
-    /**
      * publishes metadata about a given dataset to make the dataset generally discoverable.
      *
      * @throws DatasetMetaPublishException if we fail to publish the metadata.
      */
     private void publishMetadata(DatasetMeta meta, DatasetUri datasetUri) throws DatasetMetaPublishException {
         log.info("Publish dataset meta for {}", datasetUri.toString());
-        if (! canInvokeExternalServices()) {
-            log.warn("Dataset meta publishing was skipped since external services cannot be invoked. To fix, configure a valid auth token provider, e.g. set 'services.dapla-oauth.token-provider=keycloak'");
-            return;
-        }
+
         String metaJson = datasetMetaJsonOf(meta);
-        GrpcAuthorizationBearerCallCredentials credentials = grpcCallCredentials();
 
         // Get valid metadata, a signature and perform access check
-        ValidatedDatasetMeta validMeta = dataAccessService.validateDatasetMeta(metaJson, credentials);
+        ValidatedDatasetMeta validMeta = dataAccessService.validateDatasetMeta(metaJson);
 
         // Create and upload metadata file
         String validMetaPath = datasetUri.toString() + "/.dataset-meta.json";
@@ -97,10 +71,11 @@ public class DatasetMetaService {
         storeDatasetMetaFiles(validMeta, validMetaPath, signaturePath);
 
         // Notify the metadata distributor about the creation of the metadata and signature files
-        metadataDistributorService.publishFile(validMetaPath, credentials);
-        metadataDistributorService.publishFile(signaturePath, credentials);
+        // TODO: Is this correct? ..or do we only need to publish the signed file?
+        metadataDistributorService.publishFile(validMetaPath);
+        metadataDistributorService.publishFile(signaturePath);
 
-        log.info(String.format("Successfully published metadata:\n%s", new String(validMeta.getContent())));
+        log.info("Published metadata:\n{}}", new String(validMeta.getContent()));
     }
 
     private void storeDatasetMetaFiles(ValidatedDatasetMeta datasetMeta, String metadataPath, String signaturePath) {
