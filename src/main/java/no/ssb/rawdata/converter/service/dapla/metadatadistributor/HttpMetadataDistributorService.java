@@ -6,9 +6,11 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-@Context
-@RequiredArgsConstructor
+import javax.inject.Singleton;
+
 @Slf4j
+@RequiredArgsConstructor
+@Singleton
 @Requires(property = MetadataDistributorServiceConfig.PREFIX + ".impl", value = "HTTP")
 public class HttpMetadataDistributorService implements MetadataDistributorService {
 

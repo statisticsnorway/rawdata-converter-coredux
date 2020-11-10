@@ -1,15 +1,18 @@
 package no.ssb.rawdata.converter.service.dapla.dataaccess;
 
+import io.micronaut.context.annotation.Requires;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import no.ssb.rawdata.converter.service.dapla.metadatadistributor.MetadataDistributorServiceConfig;
 
-@RequiredArgsConstructor
+import javax.inject.Singleton;
+
 @Slf4j
+@RequiredArgsConstructor
+@Singleton
+@Requires(property = DataAccessServiceConfig.PREFIX + ".impl", value = "HTTP")
 public class HttpDataAccessService implements DataAccessService {
-
-    @NonNull
-    private final DataAccessServiceConfig config;
 
     private final DataAccessHttpClient client;
 
