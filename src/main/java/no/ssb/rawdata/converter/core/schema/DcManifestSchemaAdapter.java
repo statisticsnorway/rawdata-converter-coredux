@@ -1,7 +1,10 @@
 package no.ssb.rawdata.converter.core.schema;
 
 import lombok.Value;
+import no.ssb.avro.convert.core.FieldDescriptor;
+import no.ssb.avro.convert.core.ValueInterceptor;
 import no.ssb.rawdata.api.RawdataMessage;
+import no.ssb.rawdata.converter.core.convert.ValueInterceptorChain;
 import no.ssb.rawdata.converter.util.RawdataMessageAdapter;
 import no.ssb.rawdata.converter.util.WordUtil;
 import org.apache.avro.Schema;
@@ -42,6 +45,16 @@ public class DcManifestSchemaAdapter {
      * @return a new dcManifest GenericRecord
      */
     public GenericRecord newRecord(RawdataMessage rawdataMessage) {
+        return newRecord(rawdataMessage, new ValueInterceptorChain());
+    }
+
+    /**
+     * Create a new DcManifest GenericRecord with data from the supplied RawdataMessage
+     * @param rawdataMessage RawdataMessage to retrieve dcMetadata data from
+     *
+     * @return a new dcManifest GenericRecord
+     */
+    public GenericRecord newRecord(RawdataMessage rawdataMessage, ValueInterceptor valueInterceptor) {
         RawdataMessageAdapter msg = new RawdataMessageAdapter(rawdataMessage);
 
         List<GenericRecord> metadataItemRecords = new ArrayList<>();
@@ -50,7 +63,11 @@ public class DcManifestSchemaAdapter {
             GenericRecordBuilder metadataItemRecordBuilder = new GenericRecordBuilder(getMetadataItemSchema());
             Map<String, Object> metadata = m.getMetadataMap();
             propToAvroFieldNames.forEach((propName, avroFieldName) -> {
-                metadataItemRecordBuilder.set(avroFieldName, metadata.get(propName));
+                Object value = metadata.get(propName);
+                if (value != null) {
+                    value = valueInterceptor.intercept(new FieldDescriptor(propName), String.valueOf(value));
+                }
+                metadataItemRecordBuilder.set(avroFieldName, value);
             });
             metadataItemRecords.add(metadataItemRecordBuilder.build());
         });
@@ -62,6 +79,7 @@ public class DcManifestSchemaAdapter {
           .set(FIELDNAME_METADATA, metadataItemRecords)
           .build();
     }
+
 
     public Schema getMetadataItemSchema() {
         return dcManifestSchema.getField(FIELDNAME_METADATA).schema().getElementType();
