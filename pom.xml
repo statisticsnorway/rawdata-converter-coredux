@@ -18,7 +18,7 @@
     <maven-resources-plugin.version>3.1.0</maven-resources-plugin.version>
     <maven-surefire-plugin.version>2.22.2</maven-surefire-plugin.version>
 
-    <rawdata-converter.version>0.5.15</rawdata-converter.version>
+    <rawdata-converter.version>0.5.16</rawdata-converter.version>
     <micronaut.version>2.1.3</micronaut.version>
     <lombok.version>1.18.12</lombok.version>
   </properties>

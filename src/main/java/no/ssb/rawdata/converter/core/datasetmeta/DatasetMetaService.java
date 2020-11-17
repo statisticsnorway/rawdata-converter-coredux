@@ -75,7 +75,7 @@ public class DatasetMetaService {
         metadataDistributorService.publishFile(validMetaPath);
         metadataDistributorService.publishFile(signaturePath);
 
-        log.info("Published metadata:\n{}}", new String(validMeta.getContent()));
+        log.info("Published metadata:\n{}", new String(validMeta.getContent()));
     }
 
     private void storeDatasetMetaFiles(ValidatedDatasetMeta datasetMeta, String metadataPath, String signaturePath) {

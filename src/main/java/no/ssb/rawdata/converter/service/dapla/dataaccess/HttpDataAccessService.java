@@ -1,10 +1,9 @@
 package no.ssb.rawdata.converter.service.dapla.dataaccess;
 
+import com.sun.jersey.core.util.Base64;
 import io.micronaut.context.annotation.Requires;
-import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import no.ssb.rawdata.converter.service.dapla.metadatadistributor.MetadataDistributorServiceConfig;
 
 import javax.inject.Singleton;
 
@@ -22,8 +21,12 @@ public class HttpDataAccessService implements DataAccessService {
           DataAccessHttpClient.WriteLocationRequest.builder()
             .metadataJson(datasetMetaJson)
             .build())
-          .blockingGet(); // TODO: Don't block
-        return new ValidatedDatasetMeta(res.getValidMetadataJson().getBytes(), res.getMetadataSignature().getBytes());
+          .blockingGet();
+
+        return new ValidatedDatasetMeta(
+          Base64.decode(res.getValidMetadataJson()),
+          Base64.decode(res.getMetadataSignature())
+        );
     }
 
 }
