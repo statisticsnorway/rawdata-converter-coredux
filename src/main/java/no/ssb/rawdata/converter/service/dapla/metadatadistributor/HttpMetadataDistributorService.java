@@ -26,7 +26,11 @@ public class HttpMetadataDistributorService implements MetadataDistributorServic
             .topicName(config.getTopic())
             .uri(fileUri)
             .build())
-          .blockingGet(); // TODO: Don't block
+          .subscribe(
+            s -> log.debug("Successfully published file uri {} ({})", fileUri, s),
+            e -> log.error("Error publishing file uri " + fileUri
+              + " - topic=" + config.getTopic() + ", projectId=" + config.getProjectId(), e)
+          );
     }
 
 }
