@@ -20,6 +20,8 @@ import java.util.Map;
 
 import static java.time.temporal.ChronoUnit.SECONDS;
 
+// TODO: Use micronaut's http client instead
+
 @Singleton
 @Requires(property = "services.dapla-oauth.token-provider", value = "keycloak")
 @Slf4j
@@ -57,7 +59,7 @@ public class KeycloakAuthTokenProvider implements AuthTokenProvider {
               .isAfter(Instant.now());
         }
         catch (Exception e) {
-            log.error("Error parsing auth token " + authToken, e);
+            log.error("Error parsing auth token " + authToken + ". Will attempt to get a new token.", e);
             return true;
         }
     }
