@@ -1,6 +1,5 @@
 package no.ssb.rawdata.converter.service.dapla.metadatadistributor;
 
-import io.micronaut.context.annotation.Context;
 import io.micronaut.context.annotation.Requires;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;

@@ -1,7 +1,9 @@
 package no.ssb.rawdata.converter.service.dapla.oauth;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.nimbusds.jwt.JWTParser;
 import io.micronaut.context.annotation.Requires;
+import lombok.extern.slf4j.Slf4j;
 import no.ssb.rawdata.converter.util.Json;
 
 import javax.inject.Singleton;
@@ -12,19 +14,21 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
 import static java.time.temporal.ChronoUnit.SECONDS;
 
-// TODO: Cache token
-
 @Singleton
 @Requires(property = "services.dapla-oauth.token-provider", value = "keycloak")
+@Slf4j
 public class KeycloakAuthTokenProvider implements AuthTokenProvider {
 
     private final HttpClient httpClient;
     private final OauthServiceConfig config;
+
+    private String authToken;
 
     public KeycloakAuthTokenProvider(OauthServiceConfig config) {
         this.httpClient = HttpClient.newBuilder()
@@ -35,7 +39,30 @@ public class KeycloakAuthTokenProvider implements AuthTokenProvider {
 
     @Override
     public String getAuthToken() {
+        if (shouldFetchToken()) {
+            authToken = fetchAuthToken();
+        }
 
+        return authToken;
+    }
+
+    boolean shouldFetchToken() {
+        if (authToken == null) {
+            return true;
+        }
+        try {
+            // Require refetching of token if expiration time is less than 3 minutes from now
+            return JWTParser.parse(authToken).getJWTClaimsSet()
+              .getExpirationTime().toInstant().minusSeconds(180)
+              .isAfter(Instant.now());
+        }
+        catch (Exception e) {
+            log.error("Error parsing auth token " + authToken, e);
+            return true;
+        }
+    }
+
+    String fetchAuthToken() {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(config.getTokenUrl())
                 .POST(BodyPublishers.ofString("grant_type=client_credentials"))
