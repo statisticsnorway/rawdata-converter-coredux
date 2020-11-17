@@ -50,13 +50,22 @@ public class KeycloakAuthTokenProvider implements AuthTokenProvider {
 
     boolean shouldFetchToken() {
         if (authToken == null) {
+            log.debug("Retrieving auth token");
             return true;
         }
         try {
             // Require refetching of token if expiration time is less than 3 minutes from now
-            return JWTParser.parse(authToken).getJWTClaimsSet()
+            boolean tokenExpired = JWTParser.parse(authToken).getJWTClaimsSet()
               .getExpirationTime().toInstant().minusSeconds(180)
               .isAfter(Instant.now());
+
+            if (tokenExpired) {
+                log.debug("Retrieving auth token since expiration time of current token is less than 3 minutes from now");
+                return true;
+            }
+            else {
+                return false;
+            }
         }
         catch (Exception e) {
             log.error("Error parsing auth token " + authToken + ". Will attempt to get a new token.", e);
