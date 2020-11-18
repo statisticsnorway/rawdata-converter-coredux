@@ -13,8 +13,8 @@ import org.apache.parquet.schema.MessageTypeParser;
 public class UlidVisitor implements ParquetGroupVisitor {
 
     public static final MessageType ULID_PROJECTION_SCHEMA = MessageTypeParser.parseMessageType(
-            "message no.ssb.dataset.root {\n" +
-                    "  optional group metadata {\n" +
+            "message dapla.rawdata.root {\n" +
+                    "  optional group dcManifest {\n" +
                     "    required binary ulid (UTF8);\n" +
                     "  }\n" +
                     "}"

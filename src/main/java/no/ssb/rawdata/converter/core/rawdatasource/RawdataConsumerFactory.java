@@ -68,6 +68,8 @@ public class RawdataConsumerFactory {
                 position = ULID.parseULID(initialPosition);
             }
 
+        } catch (LastPositionNotFoundException e) {
+            throw e;
         } catch (Exception e) {
             throw new RawdataConverterException("Unable to determine initial rawdata converter starting position. Make sure that the rawdata.converter.initial-position param is either 'LAST', 'FIRST' or a valid ULID. Was: '" + initialPosition + "'", e);
         }
@@ -85,8 +87,21 @@ public class RawdataConsumerFactory {
         if (lastModifiedDatasetFile == null) {
             return null;
         }
-        UlidVisitor ulidVisitor = new UlidVisitor();
-        datasetStorage.readParquetFile(datasetUri, lastModifiedDatasetFile.getName(), UlidVisitor.ULID_PROJECTION_SCHEMA, ulidVisitor);
-        return ulidVisitor.getLatest();
+
+        try {
+            UlidVisitor ulidVisitor = new UlidVisitor();
+            datasetStorage.readParquetFile(datasetUri, lastModifiedDatasetFile.getName(), UlidVisitor.ULID_PROJECTION_SCHEMA, ulidVisitor);
+            return ulidVisitor.getLatest();
+        }
+        catch (Exception e) {
+            throw new LastPositionNotFoundException(datasetUri);
+        }
     }
+
+    public static class LastPositionNotFoundException extends RawdataConverterException {
+        public LastPositionNotFoundException(DatasetUri datasetUri) {
+            super("Unable to determine rawdata converter starting position. Error searching for LAST position of rawdata uri '" + datasetUri + "'");
+        }
+    }
+
 }
