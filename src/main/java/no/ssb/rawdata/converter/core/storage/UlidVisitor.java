@@ -14,7 +14,7 @@ public class UlidVisitor implements ParquetGroupVisitor {
 
     public static final MessageType ULID_PROJECTION_SCHEMA = MessageTypeParser.parseMessageType(
             "message dapla.rawdata.root {\n" +
-                    "  optional group dcManifest {\n" +
+                    "  optional group manifest.collector {\n" +
                     "    required binary ulid (UTF8);\n" +
                     "  }\n" +
                     "}"
