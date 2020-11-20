@@ -159,7 +159,7 @@ public class RawdataMessageAdapter {
      * Write all items of a rawdata message as files to the specified Path
      */
     public void writeAllParts(Path targetRootPath) throws IOException {
-        Path targetPath = targetRootPath.resolve(message.ulid().toString());
+        Path targetPath = targetRootPath.resolve(message.position());
         Files.createDirectories(targetPath);
         for (String entryId : message.keys()) {
             Files.write(targetPath.resolve(entryId), message.get(entryId));
