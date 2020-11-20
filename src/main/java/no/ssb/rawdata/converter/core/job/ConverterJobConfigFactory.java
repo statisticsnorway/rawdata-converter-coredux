@@ -35,7 +35,7 @@ public class ConverterJobConfigFactory {
         ;
         DEFAULT_CONFIG.getDebug()
           .setDryrun(false)
-          .setLogRawdataContentAllowed(false)
+          .setDevelopmentMode(false)
         ;
         DEFAULT_CONFIG.getConverterSettings()
           .setMaxRecordsBeforeFlush(1000000L)

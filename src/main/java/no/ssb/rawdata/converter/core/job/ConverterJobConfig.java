@@ -16,8 +16,11 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Context
@@ -105,13 +108,95 @@ public class ConverterJobConfig implements Serializable {
     @ConfigurationProperties("debug")
     @Data
     public static class Debug extends ConfigElement {
+        /**
+         * <p>If true, no data will be written. This can be handy during development, as it allows
+         * you to run the converter in "simulation mode" against a stream of rawdata.</p>
+         *
+         * <p>Default: false.</p>
+         */
         private Boolean dryrun;
+
+        /**
+         * <p>If true, the converter will be running in development mode. Certain warnings will
+         * be suppressed, and logs might contain more (and in some cases sensitive) information
+         * to help pinpoint issues.</p>
+         *
+         * <p>Needless to say, this SHOULD NOT be active in a production environment.</p>
+         */
         private Boolean developmentMode;
-        private Boolean logRawdataContentAllowed;
-        private Boolean storeFailedMessages;
-        private String failedMessagesStoragePath;
-        private Boolean storeAllMessages;
-        private String allMessagesStoragePath;
+
+        /**
+         * <p>If true, all failed rawdata messages will be logged.</p>
+         *
+         * <p>Default: false</p>
+         */
+        private Boolean logFailedRawdata;
+
+        /**
+         * <p>If true, all skipped rawdata messages will be logged.</p>
+         *
+         * <p>Default: false</p>
+         */
+        private Boolean logSkippedRawdata;
+
+        /**
+         * <p>If true, all rawdata messages will be logged.</p>
+         *
+         * <p>Default: false</p>
+         */
+        private Boolean logAllRawdata;
+
+        /**
+         * <p>If true, all converted records will be logged.</p>
+         *
+         * <p>Default: false</p>
+         */
+        private Boolean logAllConverted;
+
+        /**
+         * <p>If true, all failed rawdata messages will be stored to
+         * local disk (specified by localStoragePath).</p>
+         *
+         * <p>Default: false</p>
+         */
+        private Boolean storeFailedRawdata;
+
+        /**
+         * <p>If true, all skipped rawdata messages will be stored to
+         * local disk (specified by localStoragePath).</p>
+         *
+         * <p>Default: false</p>
+         */
+        private Boolean storeSkippedRawdata;
+
+        /**
+         * <p>If true, all rawdata messages will be stored to
+         * local disk (specified by localStoragePath).</p>
+         *
+         * <p>Default: false</p>
+         */
+        private Boolean storeAllRawdata;
+
+        /**
+         * <p>If true, all converted records will be stored as JSON to
+         * local disk (specified by localStoragePath).</p>
+         *
+         * <p>Default: false</p>
+         */
+        private Boolean storeAllConverted;
+
+        /**
+         * <p>The root path of locally stored debug content.</p>
+         *
+         * <p>This must be specified if
+         * any of the following properties are set to true:
+         * <ul>
+         *     <li>storeFailedRawdata</li>
+         *     <li>storeAllRawdata</li>
+         *     <li>storeAllConverted</li>
+         * </ul></p>
+         */
+        private String localStoragePath;
 
         public boolean isDryrun() {
             return Optional.ofNullable(dryrun).orElse(false);
@@ -119,14 +204,30 @@ public class ConverterJobConfig implements Serializable {
         public boolean isDevelopmentMode() {
             return Optional.ofNullable(developmentMode).orElse(false);
         }
-        public boolean isLogRawdataContentAllowed() {
-            return Optional.ofNullable(logRawdataContentAllowed).orElse(false);
+
+        public boolean shouldLogFailedRawdata() {
+            return Optional.ofNullable(logFailedRawdata).orElse(false);
         }
-        public boolean shouldStoreFailedMessages() {
-            return Optional.ofNullable(storeFailedMessages).orElse(false);
+        public boolean shouldLogSkippedRawdata() {
+            return Optional.ofNullable(logSkippedRawdata).orElse(false);
         }
-        public boolean shouldStoreAllMessages() {
-            return Optional.ofNullable(storeAllMessages).orElse(false);
+        public boolean shouldLogAllRawdata() {
+            return Optional.ofNullable(logAllRawdata).orElse(false);
+        }
+        public boolean shouldLogAllConverted() {
+            return Optional.ofNullable(logAllConverted).orElse(false);
+        }
+        public boolean shouldStoreFailedRawdata() {
+            return Optional.ofNullable(storeFailedRawdata).orElse(false);
+        }
+        public boolean shouldStoreSkippedRawdata() {
+        return Optional.ofNullable(storeSkippedRawdata).orElse(false);
+    }
+        public boolean shouldStoreAllRawdata() {
+            return Optional.ofNullable(storeAllRawdata).orElse(false);
+        }
+        public boolean shouldStoreAllConverted() {
+            return Optional.ofNullable(storeAllConverted).orElse(false);
         }
     }
 

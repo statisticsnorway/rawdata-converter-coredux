@@ -2,6 +2,8 @@ package no.ssb.rawdata.converter.core.convert;
 
 
 import lombok.Getter;
+import no.ssb.rawdata.api.RawdataMessage;
+import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.generic.GenericRecordBuilder;
 
@@ -18,6 +20,9 @@ public class ConversionResult {
 
     @Getter
     private final GenericRecord genericRecord;
+
+    @Getter
+    private final RawdataMessage rawdataMessage;
 
     @Getter
     private final List<Exception> failures;
@@ -72,19 +77,26 @@ public class ConversionResult {
         return getCountAsInt(SUCCESSFUL_CONVERSIONS_KEY);
     }
 
-    public static ConversionResultBuilder builder(GenericRecordBuilder recordBuilder) {
-        return new ConversionResultBuilder(recordBuilder);
+    public static ConversionResultBuilder builder(Schema targetSchema, RawdataMessage rawdataMessage) {
+        return new ConversionResultBuilder(new GenericRecordBuilder(targetSchema), rawdataMessage);
+    }
+
+    @Deprecated
+    public static ConversionResultBuilder builder(GenericRecordBuilder recordBuilder, RawdataMessage rawdataMessage) {
+        return new ConversionResultBuilder(recordBuilder, rawdataMessage);
     }
 
     public static class ConversionResultBuilder {
 
-        private GenericRecordBuilder recordBuilder;
+        private final RawdataMessage rawdataMessage;
+        private final GenericRecordBuilder recordBuilder;
         private List<Exception> failures = new ArrayList<>();
         private final Map<String, Object> properties = new HashMap<>();
         private final Map<String, AtomicLong> counters = new HashMap<>();
 
-        public ConversionResultBuilder(GenericRecordBuilder recordBuilder) {
+        public ConversionResultBuilder(GenericRecordBuilder recordBuilder, RawdataMessage rawdataMessage) {
             this.recordBuilder = recordBuilder;
+            this.rawdataMessage = rawdataMessage;
         }
 
         public ConversionResultBuilder withRecord(String fieldName, GenericRecord record) {
@@ -116,6 +128,7 @@ public class ConversionResult {
 
     private ConversionResult(ConversionResultBuilder builder) {
         this.genericRecord = builder.recordBuilder.build();
+        this.rawdataMessage = builder.rawdataMessage;
         this.failures = Collections.unmodifiableList(builder.failures);
         this.properties = builder.properties;
         this.counters = builder.counters;

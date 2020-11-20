@@ -64,7 +64,7 @@ class ConverterJobConfigFactoryTest {
           .setParent(config1.getName())
           .setActiveByDefault(false);
         config2.getDebug()
-          .setFailedMessagesStoragePath("file:///tmp");
+          .setLocalStoragePath("file:///tmp");
         config2.getConverterSettings()
           .setMaxRecordsBeforeFlush(9999L);
         config1.getRawdataSource()
@@ -80,9 +80,8 @@ class ConverterJobConfigFactoryTest {
         assertThat(effectiveJobConfig.getPrototype()).isNull();
         assertThat(effectiveJobConfig.getParent()).isEqualTo("config1");
         assertThat(effectiveJobConfig.getActiveByDefault()).isFalse();
-        assertThat(effectiveJobConfig.getDebug().getFailedMessagesStoragePath()).isEqualTo("file:///tmp");
+        assertThat(effectiveJobConfig.getDebug().getLocalStoragePath()).isEqualTo("file:///tmp");
         assertThat(effectiveJobConfig.getDebug().getDryrun()).isTrue();
-        assertThat(effectiveJobConfig.getDebug().getLogRawdataContentAllowed()).isFalse();
         assertThat(effectiveJobConfig.getConverterSettings().getRawdataSamples()).isEqualTo(1);
         assertThat(effectiveJobConfig.getConverterSettings().getMaxSecondsBeforeFlush()).isEqualTo(60L);
         assertThat(effectiveJobConfig.getConverterSettings().getMaxRecordsBeforeFlush()).isEqualTo(9999L);
@@ -103,7 +102,7 @@ class ConverterJobConfigFactoryTest {
         ConverterJobConfig config2 = new ConverterJobConfig("config2")
           .setActiveByDefault(false);
         config2.getDebug()
-          .setFailedMessagesStoragePath("file:///tmp");
+          .setLocalStoragePath("file:///tmp");
         config2.getConverterSettings()
           .setMaxRecordsBeforeFlush(9999L);
         int hash2 = config2.hashCode();
