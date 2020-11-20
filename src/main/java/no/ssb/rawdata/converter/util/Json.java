@@ -71,10 +71,11 @@ public class Json {
         }
     }
 
-    public static class JsonException extends RuntimeException {
-        public JsonException(String message, Throwable cause) {
-            super(message, cause);
-        }
+    /**
+     * Pretty print (indent) JSON string
+     */
+    public static String prettyFrom(String string) {
+        return prettyFrom(toObject(Object.class, string));
     }
 
     /**
@@ -98,6 +99,12 @@ public class Json {
      */
     public static String withScrambledProps(String json, Iterable<String> propsToScramble) {
         return new String(withScrambledProps(json.getBytes(StandardCharsets.UTF_8), propsToScramble));
+    }
+
+    public static class JsonException extends RuntimeException {
+        public JsonException(String message, Throwable cause) {
+            super(message, cause);
+        }
     }
 
 }
