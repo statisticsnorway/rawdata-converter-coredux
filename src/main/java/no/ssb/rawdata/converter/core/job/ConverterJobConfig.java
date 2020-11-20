@@ -5,6 +5,8 @@ import io.micronaut.context.annotation.Context;
 import io.micronaut.context.annotation.EachProperty;
 import io.micronaut.context.annotation.Parameter;
 import io.micronaut.core.annotation.Introspected;
+import io.micronaut.core.convert.format.MapFormat;
+import io.micronaut.core.naming.conventions.StringConvention;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import no.ssb.dlp.pseudo.core.PseudoFuncRule;
@@ -94,6 +96,12 @@ public class ConverterJobConfig implements Serializable {
     }
 
     private List<PseudoFuncRule> pseudoRules = new ArrayList<>();
+
+//    private Map<String, Object> converterConfig = new HashMap<>();
+
+//    public void setConverterConfig(@MapFormat(transformation = MapFormat.MapTransformation.NESTED, keyFormat = StringConvention.CAMEL_CASE) Map<String, Object> converterConfig) {
+//        this.converterConfig = converterConfig;
+//    }
 
     @Introspected
     static abstract class ConfigElement implements Serializable {}
