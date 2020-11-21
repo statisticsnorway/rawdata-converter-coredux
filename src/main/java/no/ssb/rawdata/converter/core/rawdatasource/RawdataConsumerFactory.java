@@ -94,13 +94,13 @@ public class RawdataConsumerFactory {
             return ulidVisitor.getLatest();
         }
         catch (Exception e) {
-            throw new LastPositionNotFoundException(datasetUri);
+            throw new LastPositionNotFoundException(datasetUri, e);
         }
     }
 
     public static class LastPositionNotFoundException extends RawdataConverterException {
-        public LastPositionNotFoundException(DatasetUri datasetUri) {
-            super("Unable to determine rawdata converter starting position. Error searching for LAST position of rawdata uri '" + datasetUri + "'");
+        public LastPositionNotFoundException(DatasetUri datasetUri, Exception e) {
+            super("Unable to determine rawdata converter starting position. Error searching for LAST position of rawdata uri '" + datasetUri + "'", e);
         }
     }
 
