@@ -429,7 +429,8 @@ public class ConverterJob {
     private void storeFailedRawdataToFile(RawdataMessage rawdataMessage, Throwable cause) {
         storeRawdataToFile(rawdataMessage, "failed-rawdata", Map.of(
           "stacktrace.txt", Throwables.getStackTraceAsString(cause).getBytes(),
-          "targetSchema.avsc", Json.prettyFrom(rawdataConverter.targetAvroSchema().toString()).getBytes()
+          "targetSchema.avsc", Json.prettyFrom(rawdataConverter.targetAvroSchema().toString()).getBytes(),
+          "converterJobConfig.json", Json.prettyFrom(jobConfig).getBytes()
         ));
     }
 
