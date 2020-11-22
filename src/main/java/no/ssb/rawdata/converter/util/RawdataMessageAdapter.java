@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -209,7 +210,12 @@ public class RawdataMessageAdapter {
           .map(ItemMetadata::new)
           .collect(Collectors.toMap(
             ItemMetadata::getContentKey,
-            Function.identity())
+            Function.identity(),
+
+            // Keep the last if multiple entries with the same content-key is encountered.
+            // (this should not happen, and would be a bug in the data collector)
+            // TODO: log this?
+            (i1, i2) -> i2)
           );
     }
 
