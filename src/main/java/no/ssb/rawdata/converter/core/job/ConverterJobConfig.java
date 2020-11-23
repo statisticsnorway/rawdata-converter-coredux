@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 @Context
 @Introspected
@@ -245,6 +246,7 @@ public class ConverterJobConfig implements Serializable {
         private Long maxRecordsBeforeFlush;
         private Long maxSecondsBeforeFlush;
         private Integer rawdataSamples;
+        private Set<String> skippedMessages;
     }
 
     @ConfigurationProperties("rawdata-source")

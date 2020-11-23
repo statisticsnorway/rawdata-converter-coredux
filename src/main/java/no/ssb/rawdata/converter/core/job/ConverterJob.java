@@ -351,11 +351,16 @@ public class ConverterJob {
         }
     }
 
+    private boolean isSkipped(RawdataMessage rawdataMessage) {
+        return jobConfig.getConverterSettings().getSkippedMessages() != null &&
+          jobConfig.getConverterSettings().getSkippedMessages().contains(rawdataMessage.ulid().toString());
+    }
+
     private Flowable<GenericRecord> convertRecords(Flowable<RawdataMessage> rawdataMessages) {
         return rawdataMessages
                 .map(rawdataDecryptor::tryDecrypt) // decrypt message data if encryption is configured
                 .filter(rawdataMessage -> { // filter out records that should be skipped conversion
-                    if (rawdataConverter.isConvertible(rawdataMessage)) {
+                    if (!isSkipped((rawdataMessage)) && rawdataConverter.isConvertible(rawdataMessage)) {
                         return true;
                     }
                     else {
