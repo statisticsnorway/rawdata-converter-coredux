@@ -33,6 +33,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -417,7 +418,9 @@ public class ConverterJob {
 
     private Path localStoragePath(String pathSuffix) {
         String root = Optional.ofNullable(jobConfig.getDebug().getLocalStoragePath()).orElse("/tmp");
-        return Path.of(root, jobConfig.getRawdataSource().getTopic(), pathSuffix);
+        LocalDateTime now = LocalDateTime.now();
+        String time = String.format("%02d%02d%02d", now.getMonthValue(), now.getDayOfMonth(), now.getHour());
+        return Path.of(root, jobConfig.getRawdataSource().getTopic(), pathSuffix, time);
     }
 
     private void storeGenericRecordToFile(GenericRecord record, String pathSuffix, String filename) {
@@ -446,8 +449,7 @@ public class ConverterJob {
     private void storeRawdataToFile(RawdataMessage rawdataMessage, String pathSuffix, Map<String, byte[]> additionalFiles) {
         Path targetPath = localStoragePath(pathSuffix);
         try {
-            RawdataMessageAdapter.write(rawdataMessage, targetPath);
-            appendCounter("rawdataFilesWritten", rawdataMessage.keys().size());
+            RawdataMessageAdapter.write(rawdataMessage, targetPath, jobConfig.getDebug().getIncludedRawdataEntries());
 
             if (additionalFiles != null) {
                 for (Entry<String, byte[]> e : additionalFiles.entrySet()) {

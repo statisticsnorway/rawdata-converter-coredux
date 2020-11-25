@@ -1,6 +1,7 @@
 package no.ssb.rawdata.converter.util;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.common.collect.Sets;
 import de.huxhorn.sulky.ulid.ULID;
 import no.ssb.rawdata.api.RawdataMessage;
 
@@ -153,16 +154,33 @@ public class RawdataMessageAdapter {
      * Convenience method to write the contents of a RawdataMessage to given path
      */
     public static void write(RawdataMessage message, Path targetRootPath) throws IOException {
-        new RawdataMessageAdapter(message).writeAllParts(targetRootPath);
+        new RawdataMessageAdapter(message).writeParts(targetRootPath, message.keys());
     }
 
     /**
-     * Write all items of a rawdata message as files to the specified Path
+     * Convenience method to write specified contents of a RawdataMessage to given path
+     */
+    public static void write(RawdataMessage message, Path targetRootPath, Set<String> entryIds) throws IOException {
+        new RawdataMessageAdapter(message).writeParts(targetRootPath, entryIds);
+    }
+
+    /**
+     * Write all items of a rawdata message as files to given path
      */
     public void writeAllParts(Path targetRootPath) throws IOException {
+        writeParts(targetRootPath, message.keys());
+    }
+
+    /**
+     * Write specified items of a rawdata message as files to the specified Path
+     */
+    public void writeParts(Path targetRootPath, Set<String> entryIds) throws IOException {
+        if (entryIds == null || entryIds.isEmpty()) {
+            entryIds = message.keys();
+        }
         Path targetPath = targetRootPath.resolve(message.position());
         Files.createDirectories(targetPath);
-        for (String entryId : message.keys()) {
+        for (String entryId : Sets.intersection(message.keys(), entryIds)) {
             Files.write(targetPath.resolve(entryId), message.get(entryId));
         }
     }

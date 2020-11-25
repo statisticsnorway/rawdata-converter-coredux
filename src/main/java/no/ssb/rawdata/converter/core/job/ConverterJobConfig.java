@@ -197,8 +197,7 @@ public class ConverterJobConfig implements Serializable {
         /**
          * <p>The root path of locally stored debug content.</p>
          *
-         * <p>This must be specified if
-         * any of the following properties are set to true:
+         * <p>This must be specified if any of the following properties are true:
          * <ul>
          *     <li>storeFailedRawdata</li>
          *     <li>storeAllRawdata</li>
@@ -206,6 +205,15 @@ public class ConverterJobConfig implements Serializable {
          * </ul></p>
          */
         private String localStoragePath;
+
+        /**
+         * <p>If specified, only the given rawdata entries will be included when logging or
+         * storing rawdata to local storage path. This can be convenient if you for some
+         * reason only want to include "whitelisted" data in logs or to local storage.</p>
+         *
+         * <p>Defaults to all items if not specified.</p>
+         */
+        private Set<String> includedRawdataEntries;
 
         public boolean isDryrun() {
             return Optional.ofNullable(dryrun).orElse(false);
