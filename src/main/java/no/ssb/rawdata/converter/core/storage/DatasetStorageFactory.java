@@ -26,10 +26,11 @@ public class DatasetStorageFactory {
         return DatasetStorage.builder()
           .withParquetProvider(new ParquetProvider(parquetRowGroupSize, parquetPageSize))
           .withBinaryBackend(binaryBackendFactory.binaryBackendOf(storageType, saKeyFile))
-          .withWriteExceptionHandler(new CustomWriteExceptionHandler())
+          //.withWriteExceptionHandler(new CustomWriteExceptionHandler())
           .build();
     }
 
+    // TODO: Remove this?
     static class CustomWriteExceptionHandler implements WriteExceptionHandler {
 
         private static final Logger log = LoggerFactory.getLogger(CustomWriteExceptionHandler.class);
