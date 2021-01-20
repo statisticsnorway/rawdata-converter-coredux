@@ -278,7 +278,7 @@ public class ConverterJob {
             RawdataMessage message = rawdataConsumer.receive(TIMEOUT, TimeUnit.MILLISECONDS);
 
             if (message != null) {
-                log.info("[{}] Process RawdataMessage - {}", jobId(), posAndIdOf(message));
+                log.info("[{}] Process RawdataMessage - {}, t={}", jobId(), posAndIdOf(message), Instant.ofEpochMilli(message.timestamp()).toString());
                 emitter.onNext(message);
             } else {
                 if (jobConfig.getTargetDataset().getType() == DatasetType.BOUNDED) {
