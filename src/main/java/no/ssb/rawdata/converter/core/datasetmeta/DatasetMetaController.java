@@ -18,6 +18,11 @@ public class DatasetMetaController {
 
     private final DatasetMetaService datasetMetaService;
 
+    /**
+     * Create, sign and and publish dataset metadata JSON along with the target dataset.
+     *
+     * @param datasetMeta payload to be used in the dataset metadata JSON file
+     */
     @Post(consumes = MediaType.APPLICATION_JSON)
     public HttpResponse publishDatasetMeta(DatasetMetaDto datasetMeta) {
         try {

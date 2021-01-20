@@ -5,8 +5,6 @@ import io.micronaut.context.annotation.Context;
 import io.micronaut.context.annotation.EachProperty;
 import io.micronaut.context.annotation.Parameter;
 import io.micronaut.core.annotation.Introspected;
-import io.micronaut.core.convert.format.MapFormat;
-import io.micronaut.core.naming.conventions.StringConvention;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import no.ssb.dlp.pseudo.core.PseudoFuncRule;
@@ -18,11 +16,8 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -99,7 +94,6 @@ public class ConverterJobConfig implements Serializable {
     private List<PseudoFuncRule> pseudoRules = new ArrayList<>();
 
 //    private Map<String, Object> converterConfig = new HashMap<>();
-
 //    public void setConverterConfig(@MapFormat(transformation = MapFormat.MapTransformation.NESTED, keyFormat = StringConvention.CAMEL_CASE) Map<String, Object> converterConfig) {
 //        this.converterConfig = converterConfig;
 //    }
@@ -257,8 +251,24 @@ public class ConverterJobConfig implements Serializable {
     @ConfigurationProperties("converter-settings")
     @Data
     public static class ConverterSettings extends ConfigElement {
+        /**
+         * The max number of records to convert before writing results to parquet.
+         */
         private Long maxRecordsBeforeFlush;
+
+        /**
+         * The max number of seconds before writing results to parquet.
+         */
         private Long maxSecondsBeforeFlush;
+
+        /**
+         * <p>The max number of records to convert. The converter job will be stopped
+         * when reaching this count.</p>
+         *
+         * <p>Defaults to unlimited.</p>
+         */
+        private Long maxRecordsTotal;
+
         private Integer rawdataSamples;
         private Set<String> skippedMessages;
     }
