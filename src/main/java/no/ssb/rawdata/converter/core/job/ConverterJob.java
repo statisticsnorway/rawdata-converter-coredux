@@ -20,7 +20,6 @@ import no.ssb.rawdata.converter.core.crypto.DecryptedRawdataMessage.DecryptRawda
 import no.ssb.rawdata.converter.core.crypto.RawdataDecryptor;
 import no.ssb.rawdata.converter.core.datasetmeta.DatasetType;
 import no.ssb.rawdata.converter.core.datasetmeta.PublishDatasetMetaEvent;
-import no.ssb.rawdata.converter.core.exception.RawdataConverterException;
 import no.ssb.rawdata.converter.core.rawdatasource.RawdataConsumers;
 import no.ssb.rawdata.converter.util.DatasetUriBuilder;
 import no.ssb.rawdata.converter.util.Json;
@@ -29,18 +28,13 @@ import no.ssb.rawdata.converter.util.RuntimeVariables;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -68,6 +62,7 @@ public class ConverterJob {
     @NonNull private final RawdataDecryptor rawdataDecryptor;
     @NonNull private final DatasetStorage datasetStorage;
     @NonNull private final ApplicationEventPublisher eventPublisher;
+    @NonNull private final ConverterJobLocalStorage localStorage;
 
     static {
         // Handle errors that couldn't be emitted due to the downstream reaching its terminal state, or the cancellation
@@ -93,7 +88,7 @@ public class ConverterJob {
     }
 
     public void init() {
-        log.info("Initialize converter job {}\n{}", jobId(), Json.prettyFrom(jobConfig));
+        log.info("Initialize converter job {}", jobId());
         log.info("memory:\n{}", RuntimeVariables.memory());
 
         executionSummaryProperties.putIfAbsent("configuredStartPosition", jobConfig.getRawdataSource().getInitialPosition());
@@ -218,6 +213,10 @@ public class ConverterJob {
         }
     }
 
+    private long getProcessedMessagesCount() {
+        return counters.getOrDefault("processedMessagesCount", new AtomicLong()).get();
+    }
+
     public ConverterJobConfig getJobConfig() {
         return jobConfig;
     }
@@ -226,7 +225,7 @@ public class ConverterJob {
 
         double avgMessagesPerSecond = 0;
         try {
-            avgMessagesPerSecond = (double) counters.get("processedMessagesCount").get() / runtime.getElapsedTimeInSeconds();
+            avgMessagesPerSecond = (double) getProcessedMessagesCount() / runtime.getElapsedTimeInSeconds();
         }
         catch (Exception e) { /* OK to swallow */ }
 
@@ -354,7 +353,11 @@ public class ConverterJob {
             log.info("RawdataMessage ({}):\n{}", posAndIdOf(rawdataMessage), RawdataMessageAdapter.toDebugString(rawdataMessage));
         }
         if (jobConfig.getDebug().shouldStoreFailedRawdata()) {
-            storeFailedRawdataToFile(rawdataMessage, cause);
+            localStorage.storeRawdataToFile(rawdataMessage, "failed-rawdata", Map.of(
+              "stacktrace.txt", Throwables.getStackTraceAsString(cause).getBytes(),
+              "targetSchema.avsc", Json.prettyFrom(rawdataConverter.targetAvroSchema().toString()).getBytes(),
+              "converterJobConfig.json", Json.prettyFrom(jobConfig).getBytes()
+            ));
             log.info("Wrote failed rawdata message contents to local filesystem");
         }
     }
@@ -376,7 +379,7 @@ public class ConverterJob {
                             log.info("Skipped RawdataMessage ({}):\n{}", posAndIdOf(rawdataMessage), RawdataMessageAdapter.toDebugString(rawdataMessage));
                         }
                         if (jobConfig.getDebug().shouldStoreSkippedRawdata()) {
-                            storeRawdataToFile(rawdataMessage, "skipped-rawdata");
+                            localStorage.storeRawdataToFile(rawdataMessage, "skipped-rawdata");
                         }
 
                         appendCounter("skippedMessagesCount", 1);
@@ -385,7 +388,7 @@ public class ConverterJob {
                 })
                 .map(rawdataMessage -> { // optionally write record to file
                     if (jobConfig.getDebug().shouldStoreAllRawdata()) {
-                        storeRawdataToFile(rawdataMessage, "rawdata");
+                        localStorage.storeRawdataToFile(rawdataMessage, "rawdata");
                     }
                     if (jobConfig.getDebug().shouldLogAllRawdata()) {
                         log.info("RawdataMessage ({}):\n{}", posAndIdOf(rawdataMessage), RawdataMessageAdapter.toDebugString(rawdataMessage));
@@ -414,59 +417,11 @@ public class ConverterJob {
                         log.info("Converted record:\n{}", record.toString());
                     }
                     if (jobConfig.getDebug().shouldStoreAllConverted()) {
-                        storeGenericRecordToFile(record,  "converted/" + conversionResult.getRawdataMessage().position(), "converted.json");
+                        localStorage.storeToFile("converted", conversionResult.getRawdataMessage().position(), Map.of("converted.json", Json.prettyFrom(record.toString()).getBytes()));
                     }
 
                     return record;
                 });
-    }
-
-    // TODO: Move the local storage stuff into a separate service
-
-    private Path localStoragePath(String pathSuffix) {
-        String root = Optional.ofNullable(jobConfig.getDebug().getLocalStoragePath()).orElse("/tmp");
-        LocalDateTime now = LocalDateTime.now();
-        String time = String.format("%02d%02d%02d", now.getMonthValue(), now.getDayOfMonth(), now.getHour());
-        return Path.of(root, jobConfig.getRawdataSource().getTopic(), pathSuffix, time);
-    }
-
-    private void storeGenericRecordToFile(GenericRecord record, String pathSuffix, String filename) {
-        Path targetPath = localStoragePath(pathSuffix);
-        try {
-            Files.createDirectories(targetPath);
-            Files.write(targetPath.resolve(filename), Json.prettyFrom(record.toString()).getBytes());
-        }
-        catch (IOException ioe) {
-            throw new RawdataConverterException("Error writing generic record to " + targetPath, ioe);
-        }
-    }
-
-    private void storeFailedRawdataToFile(RawdataMessage rawdataMessage, Throwable cause) {
-        storeRawdataToFile(rawdataMessage, "failed-rawdata", Map.of(
-          "stacktrace.txt", Throwables.getStackTraceAsString(cause).getBytes(),
-          "targetSchema.avsc", Json.prettyFrom(rawdataConverter.targetAvroSchema().toString()).getBytes(),
-          "converterJobConfig.json", Json.prettyFrom(jobConfig).getBytes()
-        ));
-    }
-
-    private void storeRawdataToFile(RawdataMessage rawdataMessage, String pathSuffix) {
-        this.storeRawdataToFile(rawdataMessage, pathSuffix, null);
-    }
-
-    private void storeRawdataToFile(RawdataMessage rawdataMessage, String pathSuffix, Map<String, byte[]> additionalFiles) {
-        Path targetPath = localStoragePath(pathSuffix);
-        try {
-            RawdataMessageAdapter.write(rawdataMessage, targetPath, jobConfig.getDebug().getIncludedRawdataEntries());
-
-            if (additionalFiles != null) {
-                for (Entry<String, byte[]> e : additionalFiles.entrySet()) {
-                    Files.write(targetPath.resolve(rawdataMessage.position()).resolve(e.getKey()), e.getValue());
-                }
-            }
-        }
-        catch (IOException ioe) {
-            throw new RawdataConverterException("Error writing rawdata message " + posAndIdOf(rawdataMessage) + " to " + targetPath, ioe);
-        }
     }
 
     public void appendCounter(String key, long delta) {

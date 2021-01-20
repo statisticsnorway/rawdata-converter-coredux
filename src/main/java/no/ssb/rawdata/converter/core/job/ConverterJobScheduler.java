@@ -53,6 +53,7 @@ public class ConverterJobScheduler {
               .rawdataConsumers(rawdataConsumerFactory.rawdataConsumersOf(jobConfig))
               .rawdataDecryptor(rawdataDecryptorFactory.rawdataDecryptorOf(jobConfig.getRawdataSource().getName())) //TODO: Support rawdataDecryptor=null
               .datasetStorage(datasetStorageFactory.datasetStorageOf(StorageType.of(jobConfig.getTargetStorage().getRoot()), jobConfig.getTargetStorage().getSaKeyFile()))
+              .localStorage(new ConverterJobLocalStorage(jobConfig, eventPublisher))
               .eventPublisher(eventPublisher)
               .build();
 

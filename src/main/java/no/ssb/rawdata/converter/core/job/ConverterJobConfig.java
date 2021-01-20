@@ -207,6 +207,12 @@ public class ConverterJobConfig implements Serializable {
         private String localStoragePath;
 
         /**
+         * If specified, items will be added to a password protected archive. Can be used to add additional
+         * security to stored debug data such as failed rawdata messages.
+         */
+        private String localStoragePassword;
+
+        /**
          * <p>If specified, only the given rawdata entries will be included when logging or
          * storing rawdata to local storage path. This can be convenient if you for some
          * reason only want to include "whitelisted" data in logs or to local storage.</p>

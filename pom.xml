@@ -143,6 +143,10 @@
       <groupId>net.thisptr</groupId>
       <artifactId>jackson-jq</artifactId>
     </dependency>
+    <dependency>
+      <groupId>net.lingala.zip4j</groupId>
+      <artifactId>zip4j</artifactId>
+    </dependency>
 
     <!-- SSB -->
     <dependency>
