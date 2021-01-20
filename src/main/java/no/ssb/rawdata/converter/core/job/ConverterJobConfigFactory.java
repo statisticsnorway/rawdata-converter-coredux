@@ -40,6 +40,10 @@ public class ConverterJobConfigFactory {
         DEFAULT_CONFIG.getConverterSettings()
           .setMaxRecordsBeforeFlush(1000000L)
           .setMaxSecondsBeforeFlush(300L)
+          .setRawdataSamples(1)
+        ;
+        DEFAULT_CONFIG.getRawdataSource()
+          .setInitialPosition("LAST")
         ;
         DEFAULT_CONFIG.getRawdataSource()
           ;
