@@ -194,6 +194,7 @@ public class ConverterJobConfig implements Serializable {
          * <p>This must be specified if any of the following properties are true:
          * <ul>
          *     <li>storeFailedRawdata</li>
+         *     <li>storeSkippedRawdata</li>
          *     <li>storeAllRawdata</li>
          *     <li>storeAllConverted</li>
          * </ul></p>
@@ -269,25 +270,81 @@ public class ConverterJobConfig implements Serializable {
          */
         private Long maxRecordsTotal;
 
+        /**
+         * <p>The number of rawdata messages to supply the RawdataConverter#init method.</p>
+         *
+         * <p>Defaults to 1</p>
+         */
         private Integer rawdataSamples;
+
+        /**
+         * Set of RawdataMessages (comma-separated string of ULIDs) that will explicitly be skipped from being converted
+         *
+         * <p>Note that using this should be considered a "hack" and thus only as "last resort" or if you can accept the
+         * accompanying technical debt.</p>
+         */
         private Set<String> skippedMessages;
     }
 
     @ConfigurationProperties("rawdata-source")
     @Data
     public static class RawdataSourceRef extends ConfigElement {
+        /**
+         * References a named entry in the rawdata.sources config section of the application config.
+         */
         private String name;
+
+        /**
+         * <p>Name of the rawdata stream written by the data collector.</p>
+         *
+         * <p>If the rawdata client provider is either GCS or filesystem, the topic will be the
+         * same as the name of the directory that holds the avro files that contains rawdata.</p>
+         */
         private String topic;
+
+        /**
+         * <p>The position of the rawdata stream that the rawdata converter should start reading from.</p>
+         *
+         * <p>One of:<ul>
+         *   <li>LAST - after the last known (converted) position, meaning that the rawdata converter will determine the last known position from the target dataset. If the target dataset is not readable, then the converter will start from the beginning of the stream</li>
+         *   <li>FIRST - always from the beginning of the stream. Note that this might result in duplicates if the dataset already exists.</li>
+         *   <li>a specific RawdataMessage ULID</li>
+         * </ul></p>
+         */
         private String initialPosition;
     }
 
     @ConfigurationProperties("target-storage")
     @Data
     public static class TargetStorage extends ConfigElement {
+        /**
+         * The root of the dataset (the part the prefixes the path)
+         */
         private String root;
+
+        /**
+         * <p>Canonical path used in all practical situations to reference a dataset.</p>
+         *
+         * <p>Note that this not the full or absolute path to a dataset, e.g. the path
+         * section does not include root and version fragments.</p>
+         */
         private String path;
+
+        /**
+         * <p>A unique string used to denote the version of the dataset.</p>
+         *
+         * <p>For all practical cases this should be a timestamp (milliseconds since the Unix epoch)</p>
+         */
         private String version;
-        private String saKeyFile; // If root is GCS and this is null, then assume compute engine credentials to be used
+
+        /**
+         * <p>Path to a GCS service account keyfile that grants write access to the target dataset.</p>
+         *
+         * <p>You will only need to specify this property if the target dataset is located in GCS AND you explicitly
+         * want to use a service account keyfile instead of compute engine credentials. If the “rawdata client provider”
+         * is GCS and this property is null, then it is assumed that compute engine credentials should be used.</p>
+         */
+        private String saKeyFile;
     }
 
     @ConfigurationProperties("target-dataset")
