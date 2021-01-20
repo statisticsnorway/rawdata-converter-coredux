@@ -271,6 +271,13 @@ public class ConverterJob {
     Flowable<RawdataMessage> rawdataMessagesFlowOf(RawdataConsumer rawdataConsumer) {
 
         return Flowable.generate(emitter -> {
+            if (jobConfig.getConverterSettings().getMaxRecordsTotal() != null) {
+                if (getProcessedMessagesCount() >= jobConfig.getConverterSettings().getMaxRecordsTotal()) {
+                    log.info("Stopping converter job since the configured max records to be converted ({}) was reached", jobConfig.getConverterSettings().getMaxRecordsTotal());
+                    this.stop();
+                }
+            }
+
             if (! runtime.isStarted()) {
                 emitter.onComplete();
             }
