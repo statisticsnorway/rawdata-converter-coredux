@@ -20,6 +20,7 @@
 
     <rawdata-converter.version>0.6.7</rawdata-converter.version>
     <micronaut.version>2.2.0</micronaut.version>
+    <micronaut.version>2.2.3</micronaut.version>
     <lombok.version>1.18.12</lombok.version>
   </properties>
 
