@@ -5,11 +5,13 @@ import io.micronaut.context.annotation.Context;
 import io.micronaut.context.annotation.EachProperty;
 import io.micronaut.context.annotation.Parameter;
 import io.micronaut.core.annotation.Introspected;
+import io.micronaut.core.convert.format.MapFormat;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import no.ssb.dlp.pseudo.core.PseudoFuncRule;
 import no.ssb.rawdata.converter.core.datasetmeta.DatasetType;
 import no.ssb.rawdata.converter.core.datasetmeta.Valuation;
+import no.ssb.rawdata.converter.util.Json;
 
 import java.io.Serializable;
 import java.lang.annotation.ElementType;
@@ -17,9 +19,14 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+
+import static io.micronaut.core.convert.format.MapFormat.MapTransformation.NESTED;
+import static io.micronaut.core.naming.conventions.StringConvention.CAMEL_CASE;
 
 @Context
 @Introspected
@@ -83,6 +90,11 @@ public class ConverterJobConfig implements Serializable {
      */
     private TargetDataset targetDataset = new TargetDataset();
 
+    /**
+     * Converter Application specific configuration, represented as a generic JSON map.
+     */
+    private Map<String, Object> appConfig = new HashMap<>();
+
     public boolean isPrototype() {
         return Optional.ofNullable(prototype).orElse(false);
     }
@@ -93,10 +105,14 @@ public class ConverterJobConfig implements Serializable {
 
     private List<PseudoFuncRule> pseudoRules = new ArrayList<>();
 
-//    private Map<String, Object> converterConfig = new HashMap<>();
-//    public void setConverterConfig(@MapFormat(transformation = MapFormat.MapTransformation.NESTED, keyFormat = StringConvention.CAMEL_CASE) Map<String, Object> converterConfig) {
-//        this.converterConfig = converterConfig;
-//    }
+    public void setAppConfig(@MapFormat(keyFormat = CAMEL_CASE, transformation = NESTED) Map<String, Object> appConfig) {
+        this.appConfig = appConfig;
+    }
+
+    public String appConfigJson() {
+        String appConfigJson = Json.from(appConfig);
+        return Json.withCamelCasedKeys(appConfigJson);
+    }
 
     @Introspected
     static abstract class ConfigElement implements Serializable {}
