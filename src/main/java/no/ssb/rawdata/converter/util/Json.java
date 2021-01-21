@@ -1,9 +1,14 @@
 package no.ssb.rawdata.converter.util;
 
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import lombok.experimental.UtilityClass;
@@ -15,6 +20,10 @@ import java.util.Map;
 @UtilityClass
 public class Json {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+    static {
+        OBJECT_MAPPER.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    }
 
     /**
      * Convert JSON to Object
@@ -99,6 +108,30 @@ public class Json {
      */
     public static String withScrambledProps(String json, Iterable<String> propsToScramble) {
         return new String(withScrambledProps(json.getBytes(StandardCharsets.UTF_8), propsToScramble));
+    }
+
+    /**
+     * Convert all property keys of the specified JSON to camelCase
+     */
+    public static String withCamelCasedKeys(String json) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new SimpleModule()
+          .addKeySerializer(String.class, new JsonSerializer<>() {
+              @Override
+              public void serialize(String value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+                  String key = WordUtil.toCamelCase(value);
+                  gen.writeFieldName(key);
+              }
+          })
+        );
+
+        try {
+            Map<String, Object> jsonMap = objectMapper.readValue(json, new TypeReference<>() {
+            });
+            return objectMapper.writeValueAsString(jsonMap);
+        } catch (Exception e) {
+            throw new JsonException("Error transforming JSON", e);
+        }
     }
 
     public static class JsonException extends RuntimeException {
