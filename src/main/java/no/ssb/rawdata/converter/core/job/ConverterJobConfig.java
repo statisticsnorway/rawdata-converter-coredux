@@ -91,7 +91,9 @@ public class ConverterJobConfig implements Serializable {
     private TargetDataset targetDataset = new TargetDataset();
 
     /**
-     * Converter Application specific configuration, represented as a generic JSON map.
+     * <p>Implementation specific configuration for the converter app, represented as a generic JSON map.</p>
+     *
+     * <p>E.g. stuff like schema names, versions, etc</p>
      */
     private Map<String, Object> appConfig = new HashMap<>();
 
