@@ -15,7 +15,11 @@ public abstract class RawdataConverterApplication {
         }
 
         Logger log = LoggerFactory.getLogger(RawdataConverterApplication.class);
-        log.info("rawdata-converter-core version: {}", MavenArtifactUtil.findArtifactVersion("no.ssb.rawdata.converter", "rawdata-converter-coredux").orElse("unknown"));
+        log.info("rawdata-converter-core version: {}", rawdataConverterCoreVersion());
+    }
+
+    public static String rawdataConverterCoreVersion() {
+        return MavenArtifactUtil.findArtifactVersion("no.ssb.rawdata.converter", "rawdata-converter-coredux").orElse("unknown");
     }
 
 }
