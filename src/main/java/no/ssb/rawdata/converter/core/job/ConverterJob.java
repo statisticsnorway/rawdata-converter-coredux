@@ -37,7 +37,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static no.ssb.rawdata.converter.util.RawdataMessageAdapter.posAndIdOf;
 
@@ -54,7 +53,6 @@ public class ConverterJob {
     private final ConverterJobRuntime runtime = new ConverterJobRuntime();
     private final Deque<RawdataMessage> lastRawdataMessages = new ArrayDeque<>();
     private final Map<String, Object> executionSummaryProperties = new LinkedHashMap<>();
-    private final Map<String, AtomicLong> counters = new LinkedHashMap<>();
 
     @NonNull private final ConverterJobConfig jobConfig;
     @NonNull private final RawdataConverter rawdataConverter;
@@ -62,7 +60,8 @@ public class ConverterJob {
     @NonNull private final RawdataDecryptor rawdataDecryptor;
     @NonNull private final DatasetStorage datasetStorage;
     @NonNull private final ApplicationEventPublisher eventPublisher;
-    @NonNull private final ConverterJobLocalStorage localStorage;
+    @NonNull private final ConverterJobLocalStorage localStorage; // TODO: Initialize internally instead of in Scheduler
+    @NonNull private final ConverterJobMetrics jobMetrics;// = new ConverterJobMetrics();
 
     static {
         // Handle errors that couldn't be emitted due to the downstream reaching its terminal state, or the cancellation
@@ -105,7 +104,7 @@ public class ConverterJob {
         if (isRawdataBeingLogged && !debug.isDevelopmentMode()) {
             log.warn("Converter is allowing rawdata content to be logged in clear text. This is NOT recommended for a production environment.");
         }
-        boolean isRawdataBeingStored = debug.shouldStoreAllRawdata() || debug.shouldStoreFailedRawdata() || debug.shouldStoreSkippedRawdata();
+        boolean isRawdataBeingStored = debug.shouldStoreAllRawdata() || debug.shouldStoreFailedRawdata() || debug.shouldStoreSkippedRawdata() || debug.shouldStoreAllConverted();
         if (isRawdataBeingStored && debug.getLocalStoragePath() == null) {
             throw new IllegalStateException("Converter is configured to store rawdata messages, but no storage path is specified (missing '[job].debug.local-storage-path')");
         }
@@ -120,6 +119,7 @@ public class ConverterJob {
 
     public void start() {
         log.info("Start converter job {}", jobId());
+        jobMetrics.appendConverterJob(this);
 
         Schema targetAvroSchema = rawdataConverter.targetAvroSchema();
 
@@ -213,8 +213,8 @@ public class ConverterJob {
         }
     }
 
-    private long getProcessedMessagesCount() {
-        return counters.getOrDefault("processedMessagesCount", new AtomicLong()).get();
+    public RawdataConverter getRawdataConverter() {
+        return rawdataConverter;
     }
 
     public ConverterJobConfig getJobConfig() {
@@ -222,26 +222,19 @@ public class ConverterJob {
     }
 
     public Map<String, Object> getExecutionSummary() {
-
-        double avgMessagesPerSecond = 0;
-        try {
-            avgMessagesPerSecond = (double) getProcessedMessagesCount() / runtime.getElapsedTimeInSeconds();
-        }
-        catch (Exception e) { /* OK to swallow */ }
-
         Map<String, Object> summary = new LinkedHashMap();
         summary.putAll(ImmutableMap.<String,Object>builder()
           .put("jobId", jobId().toString())
           .put("status", runtime.getState())
-          .putAll(executionSummaryProperties)
-          .put("currentPosition", posAndIdOf(lastRawdataMessage().orElse(null)))
-          .put("totalExecutionTime", runtime.getElapsedTimeAsString())
-          .put("avgMessagesPerSecond", avgMessagesPerSecond)
-          .put("avgMessagesPerHour", avgMessagesPerSecond * 3600)
-          .putAll(counters)
           .put("storageRoot", jobConfig.getTargetStorage().getRoot())
           .put("storagePath", jobConfig.getTargetStorage().getPath())
           .put("storageVersion", jobConfig.getTargetStorage().getVersion())
+          .putAll(executionSummaryProperties)
+          .put("currentPosition", posAndIdOf(lastRawdataMessage().orElse(null)))
+          .put("totalExecutionTime", runtime.getElapsedTimeAsString())
+          .put("avgMessagesPerSecond", jobMetrics.getAverageMessagesPerSecond())
+          .put("avgMessagesPerHour", jobMetrics.getAverageMessagesPerHour())
+          .putAll(jobMetrics.getCounters())
           .build());
 
         return summary;
@@ -271,7 +264,7 @@ public class ConverterJob {
 
         return Flowable.generate(emitter -> {
             if (jobConfig.getConverterSettings().getMaxRecordsTotal() != null) {
-                if (getProcessedMessagesCount() >= jobConfig.getConverterSettings().getMaxRecordsTotal()) {
+                if (jobMetrics.getProcessedMessagesCount() >= jobConfig.getConverterSettings().getMaxRecordsTotal()) {
                     log.info("Stopping converter job since the configured max records to be converted ({}) was reached", jobConfig.getConverterSettings().getMaxRecordsTotal());
                     this.stop();
                 }
@@ -382,7 +375,7 @@ public class ConverterJob {
                             localStorage.storeRawdataToFile(rawdataMessage, "skipped-rawdata");
                         }
 
-                        appendCounter("skippedMessagesCount", 1);
+                        jobMetrics.appendSkippedMessagesCount();
                         return false;
                     }
                 })
@@ -404,13 +397,7 @@ public class ConverterJob {
                     return rawdataConverter.convert(rawdataMessage);
                 })
                 .map(conversionResult -> { // Gather metrics
-                    appendCounter("processedMessagesCount", 1);
-                    conversionResult.getCounters().forEach((key, count) -> {
-                        appendCounter(key, count.longValue());
-                    });
-                    if (! conversionResult.getFailures().isEmpty()) {
-                        appendCounter("failedMessagesCount", conversionResult.getFailures().size());
-                    }
+                    jobMetrics.appendConversionResult(conversionResult); // TODO: Use async events for this instead
 
                     GenericRecord record = conversionResult.getGenericRecord();
                     if (jobConfig.getDebug().shouldLogAllConverted()) {
@@ -422,12 +409,6 @@ public class ConverterJob {
 
                     return record;
                 });
-    }
-
-    public void appendCounter(String key, long delta) {
-        AtomicLong current = this.counters.getOrDefault(key, new AtomicLong());
-        current.addAndGet(delta);
-        counters.putIfAbsent(key, current);
     }
 
     private static DatasetUri datasetUriOf(ConverterJobConfig.TargetStorage storage) {

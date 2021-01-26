@@ -1,6 +1,7 @@
 package no.ssb.rawdata.converter.core.job;
 
 import de.huxhorn.sulky.ulid.ULID;
+import io.micrometer.prometheus.PrometheusMeterRegistry;
 import io.micronaut.context.event.ApplicationEventPublisher;
 import io.micronaut.scheduling.TaskExecutors;
 import io.micronaut.scheduling.annotation.Async;
@@ -33,6 +34,7 @@ public class ConverterJobScheduler {
     private final RawdataDecryptorFactory rawdataDecryptorFactory;
     private final DatasetStorageFactory datasetStorageFactory;
     private final ApplicationEventPublisher eventPublisher;
+    private final PrometheusMeterRegistry prometheusMeterRegistry;
 
     public void schedulePartial(ConverterJobConfig partialJobConfig, String converterConfigJson) {
         ConverterJobConfig jobConfig = effectiveConverterJobConfigFactory.effectiveConverterJobConfigOf(partialJobConfig);
@@ -53,7 +55,8 @@ public class ConverterJobScheduler {
               .rawdataConsumers(rawdataConsumerFactory.rawdataConsumersOf(jobConfig))
               .rawdataDecryptor(rawdataDecryptorFactory.rawdataDecryptorOf(jobConfig.getRawdataSource().getName())) //TODO: Support rawdataDecryptor=null
               .datasetStorage(datasetStorageFactory.datasetStorageOf(StorageType.of(jobConfig.getTargetStorage().getRoot()), jobConfig.getTargetStorage().getSaKeyFile()))
-              .localStorage(new ConverterJobLocalStorage(jobConfig, eventPublisher))
+              .localStorage(new ConverterJobLocalStorage(jobConfig, eventPublisher)) // TODO: Initialize this internally instead?
+              .jobMetrics(new ConverterJobMetrics(prometheusMeterRegistry)) // TODO: Initialize this internally instead?
               .eventPublisher(eventPublisher)
               .build();
 
