@@ -83,6 +83,15 @@
       <artifactId>micronaut-runtime</artifactId>
       <scope>compile</scope>
     </dependency>
+    <dependency>
+      <groupId>io.micronaut</groupId>
+      <artifactId>micronaut-management</artifactId>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.micronaut.micrometer</groupId>
+      <artifactId>micronaut-micrometer-registry-prometheus</artifactId>
+    </dependency>
 
     <!-- Misc -->
     <dependency>
