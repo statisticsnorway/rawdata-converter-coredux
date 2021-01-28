@@ -81,7 +81,7 @@ public class ConverterJobConfigFactory {
         effectiveJobConfigs.putAll(jobConfigFragments.stream()
           .filter(jobConfig -> !jobConfig.isPrototype())
           .collect(Collectors.toMap(
-            jobConfig -> jobConfig.getName(),
+            jobConfig -> jobConfig.getJobName(),
             jobConfig -> effectiveConverterJobConfigOf(jobConfig)
           )));
 
@@ -120,7 +120,7 @@ public class ConverterJobConfigFactory {
         // Validate that required properties exist
         List<String> missingProps = checkMissingProperties(jobConfig);
         if (!missingProps.isEmpty()) {
-            throw new MissingRequiredPropertiesException("Missing properties in " + jobConfig.getName() + " converter job config: " + missingProps);
+            throw new MissingRequiredPropertiesException("Missing properties in " + jobConfig.getJobName() + " converter job config: " + missingProps);
         }
 
         // TODO: Complete this
@@ -135,13 +135,13 @@ public class ConverterJobConfigFactory {
     /**
      * Retrieve a ConverterJobConfig fragment by name.
      *
-     * @param name name of the ConverterJobConfig to retrieve ({@link ConverterJobConfig#getName()})
+     * @param name name of the ConverterJobConfig to retrieve ({@link ConverterJobConfig#getJobName()})
      * @return a ConverterJobConfig
      * @throws NoConverterJobConfigFoundException if the ConverterJobConfig is unknown
      */
     ConverterJobConfig getJobConfigFragmentByName(String name) {
         return jobConfigFragments.stream()
-          .filter(jobConfig -> jobConfig.getName().equals(name))
+          .filter(jobConfig -> jobConfig.getJobName().equals(name))
           .findFirst()
           .orElseThrow(() -> new NoConverterJobConfigFoundException("Unknown ConverterJobConfig '" + name + "'"));
     }
@@ -269,7 +269,7 @@ public class ConverterJobConfigFactory {
      */
     private Optional<ConverterJobConfig> findConverterJobConfigFragment(String name) {
         return jobConfigFragments.stream()
-          .filter(job -> job.getName().equalsIgnoreCase(name))
+          .filter(job -> job.getJobName().equalsIgnoreCase(name))
           .findFirst();
     }
 

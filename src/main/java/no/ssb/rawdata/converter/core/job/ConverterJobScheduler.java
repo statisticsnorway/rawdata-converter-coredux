@@ -36,18 +36,14 @@ public class ConverterJobScheduler {
     private final ApplicationEventPublisher eventPublisher;
     private final PrometheusMeterRegistry prometheusMeterRegistry;
 
-    public void schedulePartial(ConverterJobConfig partialJobConfig, String converterConfigJson) {
+    public void schedulePartial(ConverterJobConfig partialJobConfig) {
         ConverterJobConfig jobConfig = effectiveConverterJobConfigFactory.effectiveConverterJobConfigOf(partialJobConfig);
-        this.schedule(jobConfig, converterConfigJson);
-    }
-
-    public void schedule(ConverterJobConfig jobConfig) {
-        this.schedule(jobConfig, null);
+        this.schedule(jobConfig);
     }
 
     @Async
     @ExecuteOn(TaskExecutors.IO)
-    public void schedule(ConverterJobConfig jobConfig, String converterConfigJson) {
+    public void schedule(ConverterJobConfig jobConfig) {
         if (canAcceptJobs()) {
             ConverterJob job = ConverterJob.builder()
               .jobConfig(jobConfig)

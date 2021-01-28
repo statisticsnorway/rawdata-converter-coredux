@@ -1,6 +1,5 @@
 package no.ssb.rawdata.converter.core.job;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import de.huxhorn.sulky.ulid.ULID;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.MediaType;
@@ -12,7 +11,6 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import no.ssb.rawdata.converter.util.Json;
 
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 // TODO Make conditional on property
@@ -31,7 +29,7 @@ public class ConverterJobController {
         if (request.getJobConfig().getActiveByDefault() == null) {
             request.getJobConfig().setActiveByDefault(true);
         }
-        jobScheduler.schedulePartial(request.getJobConfig(), request.getConverterConfigJson().orElse(null));
+        jobScheduler.schedulePartial(request.getJobConfig());
     }
 
 /*
@@ -146,11 +144,6 @@ public class ConverterJobController {
     @Data
     public static class StartConverterJobRequest {
         private ConverterJobConfig jobConfig;
-        private JsonNode converterConfig;
-
-        public Optional<String> getConverterConfigJson() {
-            return converterConfig == null ? Optional.empty() : Optional.of(converterConfig.toString());
-        }
     }
 
 }
