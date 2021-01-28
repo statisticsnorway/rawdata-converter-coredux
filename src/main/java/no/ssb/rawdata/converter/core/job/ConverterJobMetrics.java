@@ -11,121 +11,128 @@ import lombok.NonNull;
 import no.ssb.rawdata.api.RawdataMessage;
 import no.ssb.rawdata.converter.app.RawdataConverterApplication;
 import no.ssb.rawdata.converter.core.convert.ConversionResult;
+import no.ssb.rawdata.converter.metrics.Metric;
+import no.ssb.rawdata.converter.metrics.MetricName;
 
-import java.time.Duration;
-import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
-
-import static no.ssb.rawdata.converter.core.job.ConverterJobMetrics.Metric.CONVERTER_RAWDATA_MESSAGES_TOTAL;
-import static no.ssb.rawdata.converter.core.job.ConverterJobMetrics.Metric.CONVERTER_RAWDATA_MESSAGE_SIZE_BYTES;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 public class ConverterJobMetrics {
 
-    @NonNull private final PrometheusMeterRegistry meterRegistry;
+    @NonNull
+    private final PrometheusMeterRegistry meterRegistry;
 
-    static class Metric {
-        public static final String CONVERTER_JOB_INFO = "converter_job_info";
-        public static final String CONVERTER_RAWDATA_MESSAGE_SIZE_BYTES = "converter_rawdata_message_size_bytes";
-        public static final String CONVERTER_RAWDATA_MESSAGES_TOTAL = "converter_rawdata_messages_total";
-        public static final String CONVERTER_RAWDATA_RECORDS_TOTAL = "converter_rawdata_records_total";
-        public static final String CONVERTER_RAWDATA_FIELDS_TOTAL = "converter_rawdata_fields_total";
-    }
+    @NonNull
+    private final ConverterJobConfig jobConfig;
 
-    private final Map<String, AtomicLong> counters = new LinkedHashMap<>();
-    private final Instant createdTimestamp = Instant.now();
-    private Instant lastUpdateTimestamp;
-
-//    private final Counter converterJobInfoCounter;
-    private final Counter rawdataMessagesTotalSuccessCounter;
-    private final Counter rawdataMessagesTotalFailCounter;
-    private final Counter rawdataMessagesTotalSkipCounter;
+    public static final Metric JOB_INFO = new Metric(MetricName.JOB_INFO);
+    public static final Metric RAWDATA_MESSAGES_TOTAL_SUCCESS = new Metric(MetricName.RAWDATA_MESSAGES_TOTAL, "result", "success");
+    public static final Metric RAWDATA_MESSAGES_TOTAL_FAIL = new Metric(MetricName.RAWDATA_MESSAGES_TOTAL, "result", "fail");
+    public static final Metric RAWDATA_MESSAGES_TOTAL_SKIP = new Metric(MetricName.RAWDATA_MESSAGES_TOTAL, "result", "skip");
+    public static final Metric RAWDATA_MESSAGE_SIZE_BYTES = new Metric(MetricName.RAWDATA_MESSAGE_SIZE_BYTES);
 
     private final DistributionSummary rawdataMessageSizeSummary;
 
-//    private final Counter rawdataRecordsTotalSuccessCounter;
-//    private final Counter rawdataRecordsTotalFailCounter;
-//    private final Counter rawdataRecordsTotalSkipCounter;
+    Map<String, Counter> counters = new LinkedHashMap<>();
 
-//    private final Counter rawdataFieldsTotalPseudo;
-//    private final Counter rawdataFieldsTotalPlain;
-
-    public ConverterJobMetrics(@NonNull PrometheusMeterRegistry prometheusMeterRegistry) {
+    public ConverterJobMetrics(@NonNull PrometheusMeterRegistry prometheusMeterRegistry, @NonNull ConverterJobConfig jobConfig) {
         this.meterRegistry = prometheusMeterRegistry;
-        this.lastUpdateTimestamp = createdTimestamp;
+        this.jobConfig = jobConfig;
 
-        rawdataMessagesTotalSuccessCounter = this.meterRegistry.counter(CONVERTER_RAWDATA_MESSAGES_TOTAL, "result", "success");
-        rawdataMessagesTotalFailCounter = this.meterRegistry.counter(CONVERTER_RAWDATA_MESSAGES_TOTAL, "result", "fail");
-        rawdataMessagesTotalSkipCounter = this.meterRegistry.counter(CONVERTER_RAWDATA_MESSAGES_TOTAL, "result", "skip");
+        //Register all known metrics upfront
+        incrementJobInfoCounter();
+        incrementCounter(RAWDATA_MESSAGES_TOTAL_SUCCESS, 0);
+        incrementCounter(RAWDATA_MESSAGES_TOTAL_FAIL, 0);
+        incrementCounter(RAWDATA_MESSAGES_TOTAL_SKIP, 0);
 
-        rawdataMessageSizeSummary = DistributionSummary.builder(CONVERTER_RAWDATA_MESSAGE_SIZE_BYTES)
+        rawdataMessageSizeSummary = DistributionSummary.builder(RAWDATA_MESSAGE_SIZE_BYTES.getName())
           .description("Size of encountered rawdata messages")
           .baseUnit(BaseUnits.BYTES)
+          .tags(correlationTagsOf(jobConfig))
           .register(this.meterRegistry);
     }
 
-    private static Meter.Id converterJobInfoMeterOf(ConverterJob job) {
-        return new Meter.Id(
-          Metric.CONVERTER_JOB_INFO,
+    /**
+     * Retrieve micrometer tags used to correlate converter jobs
+     */
+    private static Tags correlationTagsOf(ConverterJobConfig jobConfig) {
+        return Tags.of(
+          Tag.of("job_id", jobConfig.getJobId().toString()),
+          Tag.of("job.name", jobConfig.getJobName()),
+          Tag.of("target.storage.path", jobConfig.getTargetStorage().getPath()),
+          Tag.of("target.storage.version", jobConfig.getTargetStorage().getVersion())
+        );
+    }
+
+    public void incrementCounter(Metric metric) {
+        incrementCounter(metric.getFullName(), 1);
+    }
+
+    public void incrementCounter(Metric metric, double increment) {
+        incrementCounter(metric.getFullName(), increment);
+    }
+
+    public void incrementCounter(String metric) {
+        incrementCounter(metric, 1);
+    }
+
+    public void incrementJobInfoCounter() {
+        Meter.Id meter = new Meter.Id(
+          JOB_INFO.getName(),
           Tags.of(
-            Tag.of("job_name", job.getJobConfig().getName()),
-            Tag.of("job_id", job.jobId().toString()),
-            Tag.of("converter_name", job.getRawdataConverter().getClass().getSimpleName()),
-            Tag.of("converter_core", RawdataConverterApplication.rawdataConverterCoreVersion()),
-            Tag.of("target_storage_root", job.getJobConfig().getTargetStorage().getRoot()),
-            Tag.of("target_storage_path", job.getJobConfig().getTargetStorage().getPath()),
-            Tag.of("target_storage_version", job.getJobConfig().getTargetStorage().getVersion()),
-            Tag.of("target_dataset_type", job.getJobConfig().getTargetDataset().getType().toString()),
-            Tag.of("target_dataset_valuation", job.getJobConfig().getTargetDataset().getValuation().toString()),
-            Tag.of("rawdata_source_name", job.getJobConfig().getRawdataSource().getName()),
-            Tag.of("rawdata_source_topic", job.getJobConfig().getRawdataSource().getTopic()),
-            Tag.of("rawdata_source_initial_position", job.getJobConfig().getRawdataSource().getInitialPosition()),
-            Tag.of("debug_dryrun", Boolean.toString(job.getJobConfig().getDebug().isDryrun()))
+            Tag.of("job.id", jobConfig.getJobId().toString()),
+            Tag.of("job.name", jobConfig.getJobName()),
+            Tag.of("converter.core", RawdataConverterApplication.rawdataConverterCoreVersion()),
+            Tag.of("target.storage.root", jobConfig.getTargetStorage().getRoot()),
+            Tag.of("target.storage.path", jobConfig.getTargetStorage().getPath()),
+            Tag.of("target.storage.version", jobConfig.getTargetStorage().getVersion()),
+            Tag.of("target.dataset.type", jobConfig.getTargetDataset().getType().toString()),
+            Tag.of("target.dataset.valuation", jobConfig.getTargetDataset().getValuation().toString()),
+            Tag.of("rawdata.source.name", jobConfig.getRawdataSource().getName()),
+            Tag.of("rawdata.source.topic", jobConfig.getRawdataSource().getTopic()),
+            Tag.of("rawdata.source.position.start", jobConfig.getRawdataSource().getInitialPosition()),
+            Tag.of("dryrun", Boolean.toString(jobConfig.getDebug().isDryrun()))
           ),
           null,
           "Static information about a rawdata converter job",
           Meter.Type.COUNTER
         );
+
+        incrementCounter(JOB_INFO.getFullName(), 1, () -> meterRegistry.newCounter(meter));
     }
 
-    private void appendCounter(String key, long delta) {
-        AtomicLong current = this.counters.getOrDefault(key, new AtomicLong());
-        current.addAndGet(delta);
-        counters.putIfAbsent(key, current);
+    public void incrementCounter(String metric, double increment) {
+        incrementCounter(metric, increment, () -> newCounterWithCorrelationTags(metric));
+    }
+
+    private void incrementCounter(String metric, double increment, Supplier<Counter> counterSupplier) {
+        Counter counter = this.counters.computeIfAbsent(metric, k -> counterSupplier.get());//getOrDefault(metric, defaultCounter);
+        counters.putIfAbsent(metric, counter);
+        counter.increment(increment);
+    }
+
+    public Counter newCounterWithCorrelationTags(String metric) {
+        Metric m = new Metric(metric);
+        return meterRegistry.counter(m.getName(), correlationTagsOf(jobConfig).and(m.getTags()));
     }
 
     public void appendSkippedMessagesCount() {
-        rawdataMessagesTotalSkipCounter.increment();
-        appendCounter("skippedMessagesCount", 1);
+        incrementCounter(RAWDATA_MESSAGES_TOTAL_SKIP);
     }
 
-    public Map<String, AtomicLong> getCounters() {
-        return Map.copyOf(counters);
+    public Map<String, Double> getExecutionSummaryMetrics() {
+        return counters.entrySet().stream()
+          .collect(Collectors.toMap(
+            e -> e.getKey(),
+            e -> e.getValue().count()
+          ));
     }
 
-    public long getProcessedMessagesCount() {
-        return counters.getOrDefault("processedMessagesCount", new AtomicLong()).get();
-    }
-
-    public long getEffectiveExecutionTimeInSeconds() {
-        return Duration.between(createdTimestamp, lastUpdateTimestamp).toSeconds();
-    }
-
-    public double getAverageMessagesPerSecond() {
-        try {
-            return (double) getProcessedMessagesCount() / getEffectiveExecutionTimeInSeconds();
-        } catch (Exception e) {
-            return 0;
-        }
-    }
-
-    public double getAverageMessagesPerHour() {
-        return getAverageMessagesPerSecond() * 3600;
-    }
-
-    public void appendConverterJob(ConverterJob job) {
-        this.meterRegistry.newCounter(converterJobInfoMeterOf(job)).increment();
+    public double getRawdataMessagesProcessedTotal() {
+        return countOf(RAWDATA_MESSAGES_TOTAL_SUCCESS) +
+          countOf(RAWDATA_MESSAGES_TOTAL_SKIP);
     }
 
     private void appendRawdataMessageSize(RawdataMessage rawdataMessage) {
@@ -138,18 +145,20 @@ public class ConverterJobMetrics {
     }
 
     public void appendConversionResult(ConversionResult conversionResult) {
-        appendCounter("processedMessagesCount", 1);
-        rawdataMessagesTotalSuccessCounter.increment();
+        incrementCounter(RAWDATA_MESSAGES_TOTAL_SUCCESS);
         appendRawdataMessageSize(conversionResult.getRawdataMessage());
 
         conversionResult.getCounters().forEach((key, count) -> {
-            appendCounter(key, count.longValue());
+            incrementCounter(key, count.get());
         });
         if (!conversionResult.getFailures().isEmpty()) {
-            rawdataMessagesTotalFailCounter.increment(conversionResult.getFailures().size());
-            appendCounter("failedMessagesCount", conversionResult.getFailures().size());
+            incrementCounter(RAWDATA_MESSAGES_TOTAL_FAIL, conversionResult.getFailures().size());
         }
-        lastUpdateTimestamp = Instant.now();
+    }
+
+    private double countOf(Metric m) {
+        Counter c = counters.get(m.getFullName());
+        return (c != null) ? c.count() : 0;
     }
 
 }

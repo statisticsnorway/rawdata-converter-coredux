@@ -1,5 +1,6 @@
 package no.ssb.rawdata.converter.core.job;
 
+import de.huxhorn.sulky.ulid.ULID;
 import io.micronaut.context.annotation.ConfigurationProperties;
 import io.micronaut.context.annotation.Context;
 import io.micronaut.context.annotation.EachProperty;
@@ -34,14 +35,18 @@ import static io.micronaut.core.naming.conventions.StringConvention.CAMEL_CASE;
 @EachProperty(value = "rawdata.converter.jobs")
 public class ConverterJobConfig implements Serializable {
 
-    public ConverterJobConfig(@Parameter String name) {
-        this.name = name;
+    public ConverterJobConfig(@Parameter String jobName) {
+        this.jobName = jobName;
+        this.jobId = new ULID().nextValue();
     }
+
+    /** The job identifier */
+    private ULID.Value jobId;
 
     /**
      * The job name
      */
-    private String name;
+    private String jobName;
 
     /**
      * If true then this ConverterJobConfig is an abstract configuration ("prototype"). Prototype configs only serve

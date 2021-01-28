@@ -47,12 +47,12 @@ public class ConverterJobScheduler {
         if (canAcceptJobs()) {
             ConverterJob job = ConverterJob.builder()
               .jobConfig(jobConfig)
-              .rawdataConverter(rawdataConverterFactory.newRawdataConverter(jobConfig, converterConfigJson))
+              .rawdataConverter(rawdataConverterFactory.newRawdataConverter(jobConfig))
               .rawdataConsumers(rawdataConsumerFactory.rawdataConsumersOf(jobConfig))
               .rawdataDecryptor(rawdataDecryptorFactory.rawdataDecryptorOf(jobConfig.getRawdataSource().getName())) //TODO: Support rawdataDecryptor=null
               .datasetStorage(datasetStorageFactory.datasetStorageOf(StorageType.of(jobConfig.getTargetStorage().getRoot()), jobConfig.getTargetStorage().getSaKeyFile()))
               .localStorage(new ConverterJobLocalStorage(jobConfig, eventPublisher)) // TODO: Initialize this internally instead?
-              .jobMetrics(new ConverterJobMetrics(prometheusMeterRegistry)) // TODO: Initialize this internally instead?
+              .jobMetrics(new ConverterJobMetrics(prometheusMeterRegistry, jobConfig)) // TODO: Initialize this internally instead?
               .eventPublisher(eventPublisher)
               .build();
 

@@ -20,11 +20,11 @@ class ConverterJobConfigFactoryTest {
           .setPrototype(true);
         ConverterJobConfig secondBase = new ConverterJobConfig("secondBase")
           .setPrototype(true)
-          .setParent(base.getName());
+          .setParent(base.getJobName());
         ConverterJobConfig config1 = new ConverterJobConfig("config1")
-          .setParent(secondBase.getName());
+          .setParent(secondBase.getJobName());
         ConverterJobConfig config2 = new ConverterJobConfig("config2")
-          .setParent(config1.getName());
+          .setParent(config1.getJobName());
         ConverterJobConfig config3 = new ConverterJobConfig("config3");
 
         ConverterJobConfigFactory factory = new ConverterJobConfigFactory(List.of(base, config2, secondBase, config1), List.of());
@@ -35,7 +35,7 @@ class ConverterJobConfigFactoryTest {
 
     private List<String> converterJobConfigNamesOf(List<ConverterJobConfig> converterJobConfigs) {
         return converterJobConfigs.stream()
-          .map(ConverterJobConfig::getName)
+          .map(ConverterJobConfig::getJobName)
           .collect(Collectors.toList());
     }
 
@@ -51,7 +51,7 @@ class ConverterJobConfigFactoryTest {
           .setMaxSecondsBeforeFlush(60L);
 
         ConverterJobConfig config1 = new ConverterJobConfig("config1")
-          .setParent(base.getName())
+          .setParent(base.getJobName())
           .setActiveByDefault(true);
         config1.getDebug()
           .setDryrun(true);
@@ -61,7 +61,7 @@ class ConverterJobConfigFactoryTest {
 
         ConverterJobConfig config2 = new ConverterJobConfig("config2")
           .setPrototype(true)
-          .setParent(config1.getName())
+          .setParent(config1.getJobName())
           .setActiveByDefault(false);
         config2.getDebug()
           .setLocalStoragePath("file:///tmp");
@@ -76,7 +76,7 @@ class ConverterJobConfigFactoryTest {
 
         ConverterJobConfig effectiveJobConfig =  factory.effectiveConverterJobConfigOf(config2);
 
-        assertThat(effectiveJobConfig.getName()).isEqualTo("config2");
+        assertThat(effectiveJobConfig.getJobName()).isEqualTo("config2");
         assertThat(effectiveJobConfig.getPrototype()).isNull();
         assertThat(effectiveJobConfig.getParent()).isEqualTo("config1");
         assertThat(effectiveJobConfig.getActiveByDefault()).isFalse();

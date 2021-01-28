@@ -36,11 +36,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 
 import static no.ssb.rawdata.converter.util.RawdataMessageAdapter.posAndIdOf;
-
-// TODO: Externalize execution metrics
 
 @Slf4j
 @Builder
@@ -49,7 +48,6 @@ public class ConverterJob {
     // TODO: Make this configurable
     private static final int TIMEOUT = 1 * 1000; // seconds
 
-    private final ULID.Value jobId = new ULID().nextValue();
     private final ConverterJobRuntime runtime = new ConverterJobRuntime();
     private final Deque<RawdataMessage> lastRawdataMessages = new ArrayDeque<>();
     private final Map<String, Object> executionSummaryProperties = new LinkedHashMap<>();
@@ -61,7 +59,7 @@ public class ConverterJob {
     @NonNull private final DatasetStorage datasetStorage;
     @NonNull private final ApplicationEventPublisher eventPublisher;
     @NonNull private final ConverterJobLocalStorage localStorage; // TODO: Initialize internally instead of in Scheduler
-    @NonNull private final ConverterJobMetrics jobMetrics;// = new ConverterJobMetrics();
+    @NonNull private final ConverterJobMetrics jobMetrics;
 
     static {
         // Handle errors that couldn't be emitted due to the downstream reaching its terminal state, or the cancellation
@@ -79,7 +77,7 @@ public class ConverterJob {
     }
 
     public ULID.Value jobId() {
-        return jobId;
+        return jobConfig.getJobId();
     }
 
     ConverterJobRuntime runtime() {
@@ -90,8 +88,8 @@ public class ConverterJob {
         log.info("Initialize converter job {}", jobId());
         log.info("memory:\n{}", RuntimeVariables.memory());
 
-        executionSummaryProperties.putIfAbsent("configuredStartPosition", jobConfig.getRawdataSource().getInitialPosition());
-        executionSummaryProperties.putIfAbsent("actualStartPosition", rawdataConsumers.getMainInitialPosition());
+        executionSummaryProperties.putIfAbsent("position.start.configured", jobConfig.getRawdataSource().getInitialPosition());
+        executionSummaryProperties.putIfAbsent("position.start.actual", rawdataConsumers.getMainInitialPosition());
 
         ConverterJobConfig.Debug debug = jobConfig.getDebug();
 
@@ -119,11 +117,10 @@ public class ConverterJob {
 
     public void start() {
         log.info("Start converter job {}", jobId());
-        jobMetrics.appendConverterJob(this);
 
         Schema targetAvroSchema = rawdataConverter.targetAvroSchema();
 
-        executionSummaryProperties.putIfAbsent("startTimestamp", Instant.now().toString());
+        executionSummaryProperties.putIfAbsent("time.start", Instant.now().toString());
         runtime.start();
 
         processRawdataMessages(rawdataMessagesFlowOf(rawdataConsumers.getMainRawdataConsumer()), targetAvroSchema);
@@ -133,7 +130,7 @@ public class ConverterJob {
      * Pause the converter job
      */
     public void pause() {
-        log.info("Pause converter job {}", jobId);
+        log.info("Pause converter job {}", jobId());
         runtime.pause();
     }
 
@@ -141,13 +138,13 @@ public class ConverterJob {
      * Activate the converter job
      */
     public void resume() {
-        log.info("Resume converter job {}", jobId);
+        log.info("Resume converter job {}", jobId());
         runtime.start();
     }
 
     public void stop() {
-        log.info("Stop converter job {}", jobId);
-        executionSummaryProperties.put("stopTimestamp", Instant.now().toString());
+        log.info("Stop converter job {}", jobId());
+        executionSummaryProperties.put("time.stop", Instant.now().toString());
         runtime.stop();
         log.info("Converter job summary:\n{}", Json.prettyFrom(getExecutionSummary()));
         close();
@@ -196,10 +193,10 @@ public class ConverterJob {
     // TODO: Test and validate this
     public void resumeFromLast() {
         if (runtime.isStarted()) {
-            throw new ConverterJobException("Job " + jobId + "is already started. Must be in paused state in order to resume.");
+            throw new ConverterJobException("Job " + jobId() + "is already started. Must be in paused state in order to resume.");
         }
         if (runtime.isStopped()) {
-            throw new ConverterJobException("Job " + jobId + " is terminated and can not be resumed");
+            throw new ConverterJobException("Job " + jobId() + " is terminated and can not be resumed");
         }
 
         RawdataMessage lastRawdataMessage = lastRawdataMessage().orElse(null);
@@ -213,28 +210,22 @@ public class ConverterJob {
         }
     }
 
-    public RawdataConverter getRawdataConverter() {
-        return rawdataConverter;
-    }
-
     public ConverterJobConfig getJobConfig() {
         return jobConfig;
     }
 
     public Map<String, Object> getExecutionSummary() {
-        Map<String, Object> summary = new LinkedHashMap();
+        Map<String, Object> summary = new TreeMap();
         summary.putAll(ImmutableMap.<String,Object>builder()
-          .put("jobId", jobId().toString())
-          .put("status", runtime.getState())
-          .put("storageRoot", jobConfig.getTargetStorage().getRoot())
-          .put("storagePath", jobConfig.getTargetStorage().getPath())
-          .put("storageVersion", jobConfig.getTargetStorage().getVersion())
+          .put("job.id", jobConfig.getJobId().toString())
+          .put("job.status", runtime.getState())
+          .put("position.current", posAndIdOf(lastRawdataMessage().orElse(null)))
+          .put("target.storage.root", jobConfig.getTargetStorage().getRoot())
+          .put("target.storage.path", jobConfig.getTargetStorage().getPath())
+          .put("target.storage.version", jobConfig.getTargetStorage().getVersion())
+          .put("time.elapsed", runtime.getElapsedTimeAsString())
           .putAll(executionSummaryProperties)
-          .put("currentPosition", posAndIdOf(lastRawdataMessage().orElse(null)))
-          .put("totalExecutionTime", runtime.getElapsedTimeAsString())
-          .put("avgMessagesPerSecond", jobMetrics.getAverageMessagesPerSecond())
-          .put("avgMessagesPerHour", jobMetrics.getAverageMessagesPerHour())
-          .putAll(jobMetrics.getCounters())
+          .putAll(jobMetrics.getExecutionSummaryMetrics())
           .build());
 
         return summary;
@@ -264,7 +255,7 @@ public class ConverterJob {
 
         return Flowable.generate(emitter -> {
             if (jobConfig.getConverterSettings().getMaxRecordsTotal() != null) {
-                if (jobMetrics.getProcessedMessagesCount() >= jobConfig.getConverterSettings().getMaxRecordsTotal()) {
+                if (jobMetrics.getRawdataMessagesProcessedTotal() >= jobConfig.getConverterSettings().getMaxRecordsTotal()) {
                     log.info("Stopping converter job since the configured max records to be converted ({}) was reached", jobConfig.getConverterSettings().getMaxRecordsTotal());
                     this.stop();
                 }
