@@ -34,7 +34,7 @@ public class RawdataConsumerFactory {
         ULID.Value initialPosition = resolveInitialPosition(jobConfig.getRawdataSource().getInitialPosition(), datasetStorage, datasetUri);
 
         RawdataClient rawdataClient = rawdataClientFactory.rawdataClientOf(jobConfig.getRawdataSource().getName());
-        RawdataConsumer mainRawdataConsumer = rawdataClient.consumer(jobConfig.getRawdataSource().getTopic(), initialPosition);
+        RawdataConsumer mainRawdataConsumer = rawdataClient.consumer(jobConfig.getRawdataSource().getTopic(), initialPosition, true);
         RawdataConsumer sampleRawdataConsumer = rawdataClient.consumer(jobConfig.getRawdataSource().getTopic());
 
         return RawdataConsumers.builder()
