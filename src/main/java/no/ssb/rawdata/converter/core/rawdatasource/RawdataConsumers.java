@@ -19,9 +19,4 @@ public class RawdataConsumers {
      */
     private final RawdataConsumer sampleRawdataConsumer;
 
-    /**
-     * The actual initial position of the mainRawdataConsumer
-     */
-    private final String mainInitialPosition;
-
 }

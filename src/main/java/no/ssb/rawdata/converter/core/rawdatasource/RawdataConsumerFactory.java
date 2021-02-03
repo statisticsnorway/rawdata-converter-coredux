@@ -38,7 +38,6 @@ public class RawdataConsumerFactory {
         RawdataConsumer sampleRawdataConsumer = rawdataClient.consumer(jobConfig.getRawdataSource().getTopic());
 
         return RawdataConsumers.builder()
-          .mainInitialPosition(initialPosition == null ? "N/A" : initialPosition.toString())
           .mainRawdataConsumer(mainRawdataConsumer)
           .sampleRawdataConsumer(sampleRawdataConsumer)
           .build();

@@ -89,7 +89,6 @@ public class ConverterJob {
         log.info("memory:\n{}", RuntimeVariables.memory());
 
         executionSummaryProperties.putIfAbsent("position.start.configured", jobConfig.getRawdataSource().getInitialPosition());
-        executionSummaryProperties.putIfAbsent("position.start.actual", rawdataConsumers.getMainInitialPosition());
 
         ConverterJobConfig.Debug debug = jobConfig.getDebug();
 
@@ -269,6 +268,7 @@ public class ConverterJob {
 
             if (message != null) {
                 log.info("[{}] Process RawdataMessage - {}, t={}", jobId(), posAndIdOf(message), Instant.ofEpochMilli(message.timestamp()).toString());
+                executionSummaryProperties.putIfAbsent("position.start.actual", posAndIdOf(message));
                 emitter.onNext(message);
             } else {
                 if (jobConfig.getTargetDataset().getType() == DatasetType.BOUNDED) {
