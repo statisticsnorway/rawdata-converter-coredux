@@ -97,7 +97,7 @@ public class DatasetMetaService {
 
     static String datasetMetaJsonOf(DatasetMeta meta) {
         try {
-            return JsonFormat.printer().print(meta);
+            return JsonFormat.printer().includingDefaultValueFields().print(meta);
         } catch (InvalidProtocolBufferException e) {
             throw new DatasetMetaPublishException("Could not convert DatasetMeta to JSON", e);
         }
